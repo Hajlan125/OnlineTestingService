@@ -30,6 +30,9 @@ import {authenticationService} from "../authentication.service";
 
 export default {
 	name: "TestCreation",
+	created() {
+		this.$store.dispatch('initTest')
+	},
 	mounted() {
 		this.user = authenticationService.currentUserValue;
 	},
@@ -54,7 +57,7 @@ export default {
 			};
 			await this.$store.dispatch('addTestItem', item);
 
-			await this.$store.dispatch('initTest')
+			// await this.$store.dispatch('initTest')
 			await this.$router.push({name: "tests_list"});
 		},
 

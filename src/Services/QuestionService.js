@@ -9,6 +9,9 @@ class QuestionService{
 	getExpandQuestions() {
 		return axios.get(`http://localhost:8000/question?expand`)
 	}
+	getPassingQuestions() {
+		return axios.get(`${QUESTION_API_BASE_URL}?passing_expand`)
+	}
 	getQuestionById(id) {
 		return axios.get(`${QUESTION_API_BASE_URL}/${id}`)
 	}

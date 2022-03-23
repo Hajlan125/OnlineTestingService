@@ -12,7 +12,12 @@ export default {
 		this.$nextTick(async () => {
 			await this.$store.dispatch('initUsers');
 			await this.$store.dispatch('initTest');
-			await wait(300);
+			await this.$store.dispatch('initPassingQuestions');
+			await this.$store.dispatch('initExpandQuestions');
+			await this.$store.dispatch('initTestingSystem');
+			await this.$store.dispatch('initAnswers');
+			await this.$store.dispatch('initScore')
+			// await wait(300);
 			await this.$router.push({name: "login"});
 		});
 	},

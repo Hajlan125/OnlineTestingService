@@ -11,22 +11,31 @@ import LoginPage from "./components/LoginPage";
 import TreeTestPage from "./components/TreeTestPage"
 import { Role } from "./utils";
 import TestCreation from "./components/TestCreation";
+import TestView from "./components/TestView";
+import TestPassing from "./components/TestPassing";
+import AdminPanel from "./components/AdminPanel";
 
 
 Vue.use(VueRouter);
 export default new VueRouter({
 	mode: 'history',
 	routes: [
-		{ path: "/", name: "loader", component: Loader },
+		{path: "/", name: "loader", component: Loader },
 		{path: "/app", name: "app", component: App},
-		{path: "/modal", name: "modal", component: Register},
-		{ path: "/tests", name: "tests_list",component: Companies, meta: {authorize: [Role.Admin, Role.Teacher]}},
+		{path: "/tests", name: "tests_list",component: Companies,
+											meta: {authorize: [Role.Admin, Role.Teacher]}},
 		{path: "/test/:id", name:"test_page", component: TestPage},
 		{path: "/test/:id/question/:q_id", name:"question_by_test", component: QuestionPage},
 		{path: "/tree_test/:id", name:"tree_test_page", component: TreeTestPage},
 		{path: "/login", name: "login", component:LoginPage},
 		{path: "/home", name: "home", component: MainPage},
-		{path: "/test_creation", name:"test_creation", component: TestCreation, meta: {authorize: [Role.Teacher, Role.Admin]}}
+		{path: "/test_creation", name:"test_creation", component: TestCreation,
+															meta: {authorize: [Role.Teacher, Role.Admin]}},
+		{path: "/test_view/:id", name:"test_view", component: TestView},
+		{path: "/passing/:id", name:"test_passing", component: TestPassing,
+														meta: {authorize: [Role.Student]}},
+		{path: "/administration", name:"admin_panel", component: AdminPanel,
+															meta: {authorize: [Role.Admin]}}
 	],
 });
 

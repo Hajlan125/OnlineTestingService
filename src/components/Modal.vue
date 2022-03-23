@@ -1,101 +1,76 @@
 <template>
-	<div>
-		<h2>Inline HTML</h2>
-		<Modal btnText="Press me, senpai 😊"
-					 modalContent="
-            <div>
-              <h2> Hello I am a modal</h2>
-              <p>I like stating the obvious: <b>the obvious</b></p>
-              <p>Now, try this trick: <code>Ctrl + Shift + W </code> 😉</p>
-            </div>
-            "
-					 :closeBtn="true"
-					 closeBtnContent="
-            <span>X</span>
-            "
-		/>
-
-		<h2>Passing component/s</h2>
-		<Modal btnText="Press me, senpai 😊"
-					 :closeBtn="true"
-					 closeBtnContent="<span>X</span>"
-		>
-			<ExampleComponent/>
-		</Modal>
-
-		<h2>Multiple Content/Btns + Custom Functions</h2>
-		<Modal
-			:inception="true"
-			@before-open="yourOpenFn()"
-			@before-close="yourCloseFn()"
-			:modals="[
-        {
-          btnText: 'Press me 1',
-          modalContent: 'This is <strong>the</strong> content 1'
-        },
-        {
-          btnText: 'Press me 2',
-          modalContent:
-            '<img src=\'https://media.giphy.com/media/5exwXWg9u7yow/giphy.gif\'>'
-        },
-        {
-          btnText: 'Press me 3',
-          modalContent: 'This is the <h3>content 3</h3>'
-        }
-      ]"
-			:showNav="true"
-		/>
-
-		<h2>From Api/Json + Prev/Next Arrows</h2>
-		<Modal
-			:inception="true"
-			@before-open="yourOpenFn()"
-			@before-close="yourCloseFn()"
-			:modals="formattedUsers"
-			:showArrows="true"
-		/>
-	</div>
+	<vue-final-modal
+		v-slot="{ params, close }"
+		v-bind="$attrs"
+		classes="modal-container"
+		content-class="modal-content"
+		v-on="$listeners"
+	>
+    <span class="modal__title">
+      <slot name="title"></slot>
+    </span>
+		<div class="modal__content">
+			<slot v-bind:params="params"></slot>
+		</div>
+		<div class="modal__action">
+			<b-button @click="$emit('confirm', close)">confirm</b-button>
+			<b-button @click="$emit('cancel', close)">cancel</b-button>
+		</div>
+		<button class="modal__close" @click="close">
+			<mdi-close></mdi-close>
+		</button>
+	</vue-final-modal>
 </template>
-
 <script>
-import Modal from "@melmacaluso/vue-modal"
-import ExampleComponent from './ExampleComponent'
 export default {
-	data: () => {
-		return {
-			users: []
-		}
-	},
-	components: {
-		ExampleComponent
-	},
-	methods: {
-		yourOpenFn() {
-			console.log("yourOpenFn invoked.");
-		},
-		yourCloseFn() {
-			console.log("yourCloseFn invoked.");
-		}
-	},
-	mounted(){
-		fetch('https://jsonplaceholder.typicode.com/users')
-			.then(res => res.json())
-			.then(res => this.users = res)
-			.catch(err => console.log(err))
-	},
-	computed: {
-		formattedUsers: function() {
-			return this.users.map(user => {
-				return {
-					btnText: `${user.name}`,
-					modalContent: `
-            <h2>Email:${user.email}</h2>
-            <h2>Phone:${user.phone}</h2>
-          `
-				};
-			});
-		}
-	}
-};
+	name: 'CustomModal',
+	inheritAttrs: false
+}
 </script>
 
+<style scoped>
+::v-deep .modal-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+}
+::v-deep .modal__content {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	max-height: 90%;
+	margin: 0 1rem;
+	padding: 1rem;
+	border: 1px solid #e2e8f0;
+	border-radius: 0.25rem;
+	background: #fff;
+}
+.modal__title {
+	margin: 0 2rem 0 0;
+	font-size: 1.5rem;
+	font-weight: 700;
+}
+.modal__content {
+	flex-grow: 1;
+	overflow-y: auto;
+}
+.modal__action {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-shrink: 0;
+	padding: 1rem 0 0;
+}
+.modal__close {
+	position: absolute;
+	top: 0.5rem;
+	right: 0.5rem;
+}
+</style>
+
+<style scoped>
+.dark-mode div::v-deep .modal-content {
+	border-color: #2d3748;
+	background-color: #1a202c;
+}
+</style>

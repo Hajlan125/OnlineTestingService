@@ -25,12 +25,18 @@ export const store = new Vuex.Store({
 		testingSystems: [],
 		tests: [],
 		alertText: "",
+		currentTest: [],
 	},
 	getters: {
 
 	},
 	mutations: {
-
+		'SET_CURRENT_TEST'(state, test){
+			state.currentTest = test;
+		},
+		'SET_PASSING_QUESTION'(state, questions) {
+			state.questions = questions;
+		},
 
 		'SET_ANSWERS'(state, answers){
 			state.answers = answers;
@@ -75,43 +81,73 @@ export const store = new Vuex.Store({
 
 		'EDIT_ANSWER_ITEM'(state, answer) {
 			const item = state.answers.find(item => item.answ_id === answer.answ_id);
+			Object.assign(item, answer);
+		},
+		'EDIT_SCORE_ITEM'(state, score) {
+			const item = state.scores.find(item => item.score_id === score.score_id);
+			Object.assign(item, score)
 		},
 		'EDIT_USER_ITEM'(state, user) {
-			const item = state.users.find(item => item.id === user.id);
+			const item = state.users.find(item => item.user_id === user.user_id);
+			Object.assign(item, user);
 		},
 		'EDIT_QUESTION_ITEM'(state, question) {
 			const item = state.questions.find(item => item.q_id === question.q_id);
+			Object.assign(item, question);
 		},
 		'EDIT_TESTING_SYSTEM_ITEM'(state, testingSystem) {
 			const item = state.testingSystems.find(item => item.id === testingSystem.id)
+			Object.assign(item, item);
 		},
 		'EDIT_TEST_ITEM'(state, test) {
 			const item = state.tests.find(item => item.id === test.id)
+			Object.assign(item, item);
 		},
 
 		'REMOVE_ANSWER_ITEM'(state, answer) {
-			const index = state.answers.findIndex(item => item.id === answer.id);
-			state.answers.slice(index, 1);
+			const index = state.answers.findIndex(item => item.answ_id === answer.answ_id);
+			state.answers.splice(index, 1);
 		},
 		'REMOVE_USER_ITEM'(state, user)  {
-			const index = state.users.findIndex(item => item.id === user.id);
-			state.companies.slice(index, 1);
+			const index = state.users.findIndex(item => item.user_id === user.user_id);
+			state.users.splice(index, 1);
 		},
 		'REMOVE_QUESTION_ITEM'(state, question) {
-			const index = state.questions.findIndex(item => item.id === question.id);
-			state.questions.slice(index, 1);
+			const index = state.questions.findIndex(item => item.q_id === question.q_id);
+			state.questions.splice(index, 1);
 		},
 		'REMOVE_TESTING_SYSTEM_ITEM'(state, testingSystem) {
-			const index = state.testingSystems.findIndex(item => item.id === testingSystem.id);
-			state.testingSystems.slice(index, 1);
+			const index = state.testingSystems.findIndex(item => item.ts_id === testingSystem.ts_id);
+			state.testingSystems.splice(index, 1);
 		},
 		'REMOVE_TEST_ITEM'(state, test) {
-			const index = state.tests.findIndex(item => item.id === test.id);
-			state.tests.slice(index, 1);
+			const index = state.tests.findIndex(item => item.test_id === test.test_id);
+			state.tests.splice(index, 1);
 		}
 
 	},
 	actions: {
+		async initCurrentTest(context, id) {
+			try {
+				const response = await TestService.getTestById(id);
+				context.commit('SET_CURRENT_TEST', response.data);
+			} catch (error) {
+				context.commit('SET_ALERT_TEXT', "ERROR");
+				// alert('initCurrentTestError')
+			}
+		},
+		async removeAlertText(context) {
+			context.commit('SET_ALERT_TEXT', "NORMAL")
+		},
+
+		async initPassingQuestions(context, id) {
+			try {
+				const response = await QuestionService.getPassingQuestions();
+				context.commit('SET_PASSING_QUESTION', response.data);
+			} catch (error) {
+				context.commit('SET_ALERT_TEXT', "ERROR");
+			}
+		},
 
 		async initUsers(context) {
 			try {
@@ -173,7 +209,7 @@ export const store = new Vuex.Store({
 				context.commit('SET_TESTS', response.data);
 			} catch (error) {
 				context.commit('SET_ALERT_TEXT', "ERROR TRY AGAIN");
-				alert("error")
+				alert("initTest error")
 			}
 		},
 
@@ -231,8 +267,16 @@ export const store = new Vuex.Store({
 		},
 		async editUserItem(context, item) {
 			try {
-				const response = await UserService.putUser(item.id, item);
+				const response = await UserService.putUser(item.user_id, item);
 				context.commit("EDIT_USER_ITEM", response.data);
+			} catch (error) {
+				context.commit("SET_ALERT_TEXT", "ERROR");
+			}
+		},
+		async editScoreItem(context, item) {
+			try {
+				const response = await ScoreService.putScore(item.score_id, item)
+				context.commit("EDIT_SCORE_ITEM", response.data);
 			} catch (error) {
 				context.commit("SET_ALERT_TEXT", "ERROR");
 			}
