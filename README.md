@@ -1,4 +1,4 @@
-# Online Testing System
+# Online Tesing System
 
 ## Project setup
 ```
