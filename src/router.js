@@ -33,7 +33,7 @@ export default new VueRouter({
 															meta: {authorize: [Role.Teacher, Role.Admin]}},
 		{path: "/test_view/:id", name:"test_view", component: TestView},
 		{path: "/passing/:id", name:"test_passing", component: TestPassing,
-														meta: {authorize: [Role.Student]}},
+														meta: {authorize: [Role.Student, Role.Teacher]}},
 		{path: "/administration", name:"admin_panel", component: AdminPanel,
 															meta: {authorize: [Role.Admin]}}
 	],
