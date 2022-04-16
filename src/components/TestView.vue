@@ -38,7 +38,7 @@
 				<h4>Количество вопросов: {{questionsItemsLength}}</h4>
 				<h4>{{treeTestText}}</h4>
 			</div>
-			<div id="secondContent" v-if="(currentUser.user_type === ('student')) || (currentUser.user_type === ('admin'))">
+			<div id="secondContent">
 				<b-button variant="primary" @click="$router.push({name: 'test_passing', params: { id: ($route.params.id)}})">Начать прохождение теста</b-button>
 			</div>
 		</div>
@@ -115,7 +115,7 @@ export default {
 };
 </script>
 
-<style>
+<style scoped>
 ul, li {
 	list-style-type: none;
 	display: inline-flex;
