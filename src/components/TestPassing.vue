@@ -349,7 +349,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 
 #vo {
 	color:green;
