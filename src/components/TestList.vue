@@ -86,7 +86,6 @@
 				title="Результаты"
 			>
 				<template #modal-header="{ close }">
-					<!-- Эмулировать встроенное модальное действие кнопки закрытия заголовка -->
 					<b>Результаты прохождения теста</b>
 				</template>
 				<template #default>
@@ -155,7 +154,7 @@ export default {
 			user: "",
 			currentUser: authenticationService.currentUserValue,
 			fields: ['ID', 'Название', 'Дисциплина', 'ДатаСоздания', 'Создатель', 'Древовидность', 'edit', 'delete', 'results'],
-			result_fields: ['ts_user_id', 'ts_end_time', 'ts_score_id'],
+			result_fields: [{key: 'ts_user_id', sortable: true}, {key: 'ts_end_time', sortable: true}, {key: 'ts_score_id', sortable: true}],
 			test_item: {
 				test_name: "",
 				test_subject: "",
