@@ -1,5 +1,4 @@
 import {BehaviorSubject} from 'rxjs';
-import {handleResponse} from "./utils";
 
 const currentUserSubject = new BehaviorSubject(JSON.parse(localStorage.getItem('currentUser')));
 
@@ -10,8 +9,7 @@ export const authenticationService = {
 	get currentUserValue () { return currentUserSubject.value }
 };
 
-function login(user, username, password) {
-
+function login(user) {
 	const item = user
 	localStorage.setItem('currentUser', JSON.stringify(item));
 	currentUserSubject.next(item);
@@ -22,3 +20,7 @@ function logout() {
 	localStorage.removeItem('currentUser');
 	currentUserSubject.next(null);
 }
+
+
+
+
