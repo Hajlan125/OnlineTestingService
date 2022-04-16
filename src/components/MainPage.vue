@@ -105,7 +105,7 @@ export default {
 	}
 };
 </script>
-<style>
+<style scoped>
  .title1 {
 	 font-size: 50px;
 	 font-weight: bold;
