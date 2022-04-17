@@ -13,10 +13,17 @@
 
 			<h1 class="user-title">{{$store.state.currentTest.test_name}}</h1>
 
-		</v-app-bar>
+	</v-app-bar>
+	<v-app-bar
+			color="#E6EEFF"
+			flat
+			height="50px"
+			tile>
+		<b-alert show variant="danger" dismissible style="margin-left: auto;margin-right: auto">
+			При перезагрузке или закрытии окна, все текущие результаты будут сохранены
+		</b-alert>
+	</v-app-bar>
 	<div style="margin-left: auto;margin-right: auto;width: 600px;text-align:center;">
-<!--		<p class="testName" v-if="isTree">Древовидный <span>{{$store.state.currentTest.test_name}}</span></p>-->
-<!--		<p class="testName" v-else>Обычный <span>{{$store.state.currentTest.test_name}}</span></p>-->
 		<div class="quiz-box" id="quiz">
 			<div v-for="question in treeList" class="quiz-header">
 				<h4 id="question">{{question.q_title}}</h4>
@@ -39,29 +46,7 @@
 		</div>
 
 	</div>
-<!--	<div v-else style="margin-left: auto;margin-right: auto;width: 600px;text-align:center;">-->
-<!--		<p>Обычный <span>{{$store.state.currentTest.test_name}}</span></p>-->
-<!--		<tr v-for="question in questionsList">-->
-<!--			<td>{{question.q_title}}</td>-->
-<!--			<td>-->
-<!--				<div v-if="manyAnswersChecking(question.q_id, question.answers)">-->
-<!--					<b-form-group label="Ответы">-->
-<!--						<b-form-checkbox-group v-model="selected">-->
-<!--							<b-form-checkbox v-for="a in question.answers" :key="a.answ_id" :value="a.answ_id" name="some-check">{{a.answ_text}}</b-form-checkbox>-->
-<!--						</b-form-checkbox-group>-->
-<!--					</b-form-group>-->
-<!--				</div>-->
-<!--				<div v-if="!manyAnswersChecking(question.q_id, question.answers)">-->
-<!--					<b-form-group label="Ответы">-->
-<!--						<b-form-radio-group>-->
-<!--							<b-form-radio :id="`${a.answ_id}`" :key="a.answ_id" v-for="a in question.answers" :ref="a.answ_id" :value="a.answ_id" name="radio-btn" >{{a.answ_text}}</b-form-radio>-->
-<!--						</b-form-radio-group>-->
-<!--					</b-form-group>-->
-<!--				</div>-->
-<!--			</td>-->
 
-<!--		</tr>-->
-<!--	</div>-->
 	<b-button class="button" @click="showMsgBoxOne($event)"> <!-- @click="submit($event)" -->
 			Закончить
 	</b-button>
@@ -120,7 +105,7 @@ export default {
 
 		});
 
-		alert('При перезагрузке или закрытии окна, все текущие результаты будут сохранены')
+		// alert('При перезагрузке или закрытии окна, все текущие результаты будут сохранены')
 
 		this.$store.dispatch('initCurrentTest', parseInt(this.$route.params.id))
 		const is_tree = this.$store.state.currentTest.is_tree;
@@ -274,8 +259,14 @@ export default {
 			//получение всех правильных ответов пользователя
 			let your_right_answers = right_answers.filter(i => your_answers.includes(i))
 			this.right_count = your_right_answers.length
+
 			let percentage = (your_right_answers.length / right_answers.length) * 100
-			this.percentage = percentage
+
+			if (isNaN(percentage)) {
+				this.percentage = 0
+			} else {
+				this.percentage = parseInt(percentage)
+			}
 
 			switch (true) {
 				case percentage.inRange(50, 71):
