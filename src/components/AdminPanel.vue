@@ -35,16 +35,9 @@
 						<b-button class="button-71" @click="showUserModal(0)">Добавить</b-button>
 						<b-table fixed :items="userList" :fields="fields">
 							<template #cell(password)="data">
-								<b-button-group>
-									<p class="h5 mb-2"> <b-checkbox button size="sm" button-variant="outline" v-model="selected" :value="data.index + 1" variant="outline-secondary" style="padding-right: 5%;">
-										<b-icon v-if="selected.find(item => item === data.index + 1)" icon="eye-slash-fill"></b-icon>
-										<b-icon v-else icon="eye-fill"></b-icon>
-									</b-checkbox></p>
-									<div>
-										<p v-if="selected.find(item => item === data.index + 1)">{{data.item.password}}</p>
-										<h3 v-else>{{replaceChars(data.item.password)}}</h3>
-									</div>
-								</b-button-group>
+								<b-button @click="showChangingPasswordModal(data.item.user_id)" variant="outline-primary">
+									Изменить пароль
+								</b-button>
 							</template>
 							<template #cell(edit)="data">
 								<b-button @click="showUserModal(data.item.user_id)" variant="outline-warning">
@@ -99,22 +92,51 @@
 			</b-modal>
 		</div>
 		<div>
-			<b-modal id="user-modal" cancel-title="Отмена" cancel-variant="secondary" ok-variant="success" @ok="submitUser($event)" v-on:keyup.enter="submitUser($event)" no-fade title="Редактирование пользователя">
+			<b-modal id="user-modal" cancel-title="Отмена" cancel-variant="secondary"
+							  no-fade title="Редактирование пользователя">
 				<template #default>
-					<b-form-group label="ФИО пользователя" label-for="user-name-input">
-						<b-form-input id="user-name-input" v-model="user_item.user_name" placeholder="Введите ФИО пользователя"></b-form-input>
-					</b-form-group>
-					<b-form-group label="Тип" label-for="user-type-input">
-						<b-form-select id="user-type-input" v-model="user_item.user_type" :options="options"></b-form-select>
-					</b-form-group>
-					<b-form-group label="Логин" label-for="user-login-input">
-						<b-form-input id="user-login-input" v-model="user_item.login" placeholder="Введите логин"></b-form-input>
-						<b-button class="generator-btn" @click="generate_login">Сгенерировать логин</b-button>
-					</b-form-group>
-					<b-form-group label="Пароль" label-for="user-password-input">
-						<b-form-input id="user-password-input" v-model="user_item.password" placeholder="Введите пароль"></b-form-input>
-						<b-button class="generator-btn" @click="generate_password">Сгенерировать пароль</b-button>
-					</b-form-group>
+					<b-form id="user-form" @submit="submitUser($event)">
+						<b-form-group label="ФИО пользователя" label-for="user-name-input">
+							<b-form-input required id="user-name-input" v-model="user_item.user_name" placeholder="Введите ФИО пользователя"></b-form-input>
+						</b-form-group>
+						<b-form-group label="Тип" label-for="user-type-input">
+							<b-form-select required id="user-type-input" v-model="user_item.user_type" :options="options"></b-form-select>
+						</b-form-group>
+						<b-form-group v-if="user_item.user_id === 0" label="Логин" label-for="user-login-input">
+							<b-form-input required id="user-login-input" v-model="user_item.login" placeholder="Введите логин"></b-form-input>
+							<b-button class="generator-btn" @click="generate_login">Сгенерировать логин</b-button>
+						</b-form-group>
+						<b-alert dismissible @dismiss-count-down="10"
+										 @dismissed="alert_show=false" variant="warning"
+										 :show="alert_show">Данный логин уже занят</b-alert>
+						<b-form-group v-if="user_item.user_id === 0" label="Пароль" label-for="user-password-input">
+							<b-form-input required id="user-password-input" v-model="user_item.password" placeholder="Введите пароль"></b-form-input>
+							<b-button class="generator-btn" @click="generate_password">Сгенерировать пароль</b-button>
+						</b-form-group>
+					</b-form>
+				</template>
+				<template #modal-footer="{ cancel }">
+					<b-btn @click="cancel">Отмена</b-btn>
+					<b-btn variant="success" type="submit" form="user-form">OK</b-btn>
+				</template>
+			</b-modal>
+		</div>
+		<div>
+			<b-modal id="password-change-modal" cancel-title="Отмена"
+							 cancel-variant="secondary" ok-variant="success" @cancel="new_password=''"
+							 no-fade title="Редактирование пароля">
+				<template #default>
+					<b-form id="new-password-form" @submit="submitNewPassword($event, user_item.user_id)">
+						<b-form-group label="Новый пароль" label-for="user-name-input">
+							<b-form-input required id="new-password-input" v-model="new_password"
+														placeholder="Введите новый пароль"></b-form-input>
+							<b-button class="generator-btn" @click="generate_password">Сгенерировать пароль</b-button>
+						</b-form-group>
+					</b-form>
+				</template>
+				<template #modal-footer="{ cancel }">
+					<b-btn @click="cancel">Отмена</b-btn>
+					<b-btn variant="success" type="submit" form="user-form">OK</b-btn>
 				</template>
 			</b-modal>
 		</div>
@@ -126,6 +148,7 @@ import {authenticationService} from "../authentication.service";
 import {wait} from "../utils";
 import generatePassword from "password-generator";
 
+import bcrypt from "bcryptjs";
 
 export default {
 	name: "AdminPanel",
@@ -164,7 +187,10 @@ export default {
 			},
 			is_new: true,
 			score_id: 0,
-			score_text: ""
+			score_text: "",
+
+			new_password: "",
+			alert_show: false
 		}
 	},
 	methods: {
@@ -195,6 +221,7 @@ export default {
 			e.preventDefault()
 			await this.$store.dispatch('removeUserItem', id)
 		},
+
 		showUserModal(user_id) {
 			if (user_id === 0) {
 				this.user_item= {
@@ -223,11 +250,18 @@ export default {
 		async submitUser(e) {
 			e.preventDefault()
 			if (this.user_item.user_id === 0) {
-				await this.$store.dispatch('addUserItem', this.user_item)
-				this.$bvModal.hide('user-modal')
+				if (this.$store.state.users.find(item => item.login === this.user_item.login)) {
+					this.alert_show = true
+				} else {
+					this.user_item.password = bcrypt.hashSync(this.user_item.password, 10)
+					await this.$store.dispatch('addUserItem', this.user_item)
+					this.$bvModal.hide('user-modal')
+					this.alert_show = false
+				}
 			} else {
 				await this.$store.dispatch('editUserItem', this.user_item)
 			}
+
 		},
 
 		showScoreModal(score_id) {
@@ -239,6 +273,28 @@ export default {
 			e.preventDefault()
 			await this.$store.dispatch('editScoreItem', this.score_item)
 			this.$bvModal.hide('score-modal')
+		},
+
+		showChangingPasswordModal(user_id) {
+			const item = this.userList.find(item => item.user_id === user_id)
+			this.user_item= {
+				user_id: item.user_id,
+				user_name: item.user_name,
+				user_type: item.user_type,
+				login: item.login,
+				password: item.password,
+				create_test_permission: item.create_test_permission
+			}
+			this.$bvModal.show('password-change-modal')
+		},
+		async submitNewPassword(e, user_id) {
+			e.preventDefault()
+			let item = {
+				user_id: user_id,
+				password: bcrypt.hashSync(this.new_password, 10)
+			}
+			await this.$store.dispatch('editUserItem', item)
+			this.$bvModal.hide('password-change-modal')
 		},
 
 		loadScores() {
@@ -264,7 +320,6 @@ export default {
 			return str
 		},
 
-
 		generate_password() {
 			let password = generatePassword(4)
 			let charset = '123456789'
@@ -276,21 +331,21 @@ export default {
 				password = password.substr(0, pos) + randomChar + password.substr(pos);
 			}
 			this.user_item.password = password
+			this.new_password = password
 		},
 		generate_login() {
 			let syllable_1 = ["Abing", "Al", "Ald", "Aln", "Ames", "Amp", "Ash", "At", "Ave", "Aving", "Ax", "Back", "Bake", "Bamp", "Ban", "Beck", "Ber", "Berke", "Bevers", "Bi", "Bick", "Bin", "Block", "Bol", "Bos", "Bottes", "Bow", "Brad", "Brans", "Brat", "Bre", "Bree", "Bridg", "Brink", "Bris", "Brom", "Broom", "Bud", "Cad", "Caer", "Came", "Car", "Cart", "Castle", "Cavers", "Charter", "Ched", "Chew", "Chippen", "Coly", "Corn", "Cors", "Cran", "Credi", "Crick", "Crow", "Culm", "Dagger", "Dart", "Dedding", "Deer", "Din", "Ditte", "Dittis", "Dor", "Dragon", "Drif", "Dry", "Dun", "Dur", "Dwarf", "East", "Ebring", "Eding", "Elf", "Elk", "En", "Erming", "Exe", "Fair", "Faring", "Flad", "Fording", "Forth", "Framp", "From", "Gis", "Glas", "Gnome", "Goblin", "Gras", "Grey", "Guis", "Hail", "Hart", "Haver", "Helm", "Here", "Hex", "Hol", "Hop", "In", "Kelm", "Ken", "Kew", "Kil", "King", "Kirk", "Knight", "La", "Lam", "Lan", "Laner", "Laving", "Led", "Leo", "Lindis", "Lyd", "Lymp", "Mal", "Malmes", "Marsh", "Mel", "Mell", "Minchin", "Monk", "Mont", "Mow", "Muchel", "Net", "Nether", "Nev", "New", "Nib", "North", "Pen", "Per", "Pether", "Pew", "Pris", "Rad", "Rend", "Ring", "Rip", "Rock", "Rom", "Roth", "Sapper", "Sel", "Seming", "Shaftes", "Shield", "Shob", "Shrews", "Sid", "Sken", "Skip", "Somer", "South", "Spear", "Staf", "Stan", "Stan", "Staple", "Staun", "Stoke", "Sword", "Syd", "Taun", "Tavi", "Tel", "Tewkes", "Tint", "Titch", "Tiver", "Tort", "Tot", "Trout", "Uff", "Uffing", "Ulvers", "Uplea", "Urch", "Wan", "War", "Wel", "Wen", "West", "Whit", "Wide", "Wim", "Winch", "Wit", "Withing", "Wood", "Woot", "Wor", "Wot", "Wring", "Yat"];
 
 			let syllable_2 = ["bane", "beck", "borne", "borough", "bourn", "bourne", "bray", "bridge", "burgh", "burn", "burton", "bury", "by", "chester", "comb", "combe", "con", "cost", "culme", "dal", "der", "dish", "don", "dor", "e", "east", "ent", "ern", "es", "farn", "fel", "field", "font", "ford", "frith", "glade", "glen", "gold", "gomery", "ham", "hampton", "house", "how", "hurst", "iard", "keep", "kirk", "lade", "land", "leigh", "leon", "ley", "lingham", "low", "meet", "mel", "mere", "minster", "moot", "mouth", "nard", "ne", "nes", "newton", "ney", "noller", "nor", "on", "pas", "peck", "rest", "ridge", "scott", "sey", "shire", "silver", "sley", "spring", "stock", "stoke", "ston", "stone", "sward", "swear", "tage", "ter", "tol", "ton", "ton", "ton", "ton", "ton", "ton", "ton", "ton", "ton", "ton", "town", "vale", "vern", "wall", "water", "well", "went", "west", "wick", "wood", "worth", "worthy", "yard"];
 
-			this.user_item.login = (syllable_1[Math.round(Math.random()*(200 - 1))] + syllable_2[Math.round(Math.random()*(110 - 1))])
+			let login = syllable_1[Math.round(Math.random()*(200 - 1))] + syllable_2[Math.round(Math.random()*(110 - 1))]
+			this.user_item.login = (login)
+
 		}
 	},
 	computed: {
 		userList() {
 			return this.$store.state.users.filter(item => item.user_id !== this.currentUser.user_id).sort((a, b) => a.user_id - b.user_id)
-		},
-		loginList() {
-			return this.$store.state.users.map(item => item.login)
 		},
 		scoreList() {
 			return this.$store.state.scores.sort((a,b) => a.score_id - b.score_id)
