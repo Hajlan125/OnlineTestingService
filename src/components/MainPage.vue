@@ -48,6 +48,12 @@
 					Поиск
 				</b-button>
 			</div>
+			<b-alert
+				:show="show_alert"
+				dismissible
+				variant="warning"
+				@dismiss-count-down="5"
+				@dismissed="show_alert=false">Тест не найден</b-alert>
 		</div>
 	</div>
 </template>
@@ -77,6 +83,7 @@ export default {
 			userFromApi: "",
 			user: "",
 			search_test_id: null,
+			show_alert: false
 		};
 	},
 	methods: {
@@ -99,7 +106,7 @@ export default {
 			if (this.$store.state.tests.find(item => item.test_id === id)) {
 				this.$router.push({name: 'test_view', params: {id: id}})
 			} else {
-				alert('Тест не существует')
+				this.show_alert = true
 			}
 		}
 	}
