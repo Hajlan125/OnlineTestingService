@@ -1,6 +1,7 @@
 import axios from "axios";
+import {BASE_URL} from "../utils";
 
-const SCORE_API_BASE_URL = 'http://localhost:8000/score'
+const SCORE_API_BASE_URL = BASE_URL + 'score'
 
 class ScoreService{
 	getScores() {

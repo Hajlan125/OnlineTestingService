@@ -1,6 +1,7 @@
 import axios from "axios";
+import {BASE_URL} from "../utils";
 
-const TESTING_SYSTEM_API_BASE_URL = 'http://localhost:8000/testing_system'
+const TESTING_SYSTEM_API_BASE_URL = BASE_URL + 'testing_system'
 
 class TestingSystemService{
 	getTestingSystem() {

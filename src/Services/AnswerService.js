@@ -1,6 +1,7 @@
 import axios from "axios";
+import {BASE_URL} from "../utils";
 
-const ANSWER_API_BASE_URL = 'http://localhost:8000/answer'
+const ANSWER_API_BASE_URL = BASE_URL + 'answer'
 
 class AnswerService{
 	getAnswers() {

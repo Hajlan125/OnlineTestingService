@@ -1,7 +1,7 @@
 import axios from "axios";
+import {BASE_URL} from "../utils";
 
-
-const TEST_API_BASE_URL = 'http://localhost:8000/test'
+const TEST_API_BASE_URL = BASE_URL + 'test'
 
 class TestService {
 	getTests() {
@@ -20,5 +20,5 @@ class TestService {
 		return axios.delete(`${TEST_API_BASE_URL}/${id}`)
 	}
 }
-
 export default new TestService();
+
