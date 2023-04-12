@@ -17,31 +17,35 @@ import {authenticationService} from "./authentication.service";
 import vuetify from './vuetify'
 
 import { vfmPlugin } from 'vue-final-modal'
+import axios from "axios";
 Vue.use(vfmPlugin)
 
 Vue.config.productionTip = false
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
 	const {authorize} = to.meta;
 	const currentUser = authenticationService.currentUserValue;
 	if (authorize) {
 		if (!currentUser) {
 			return next({path: '/login', query: {returnUrl: to.path}});
 		}
-		if (authorize.length && !authorize.includes(currentUser.user_type) && (currentUser.user_type !== 'admin')) {
-			alert("NO PERMISSION")
+		// let level = await axios.get(`http://localhost:8000/user_type/${currentUser.user_type}`).data.access_level
+		if (authorize.length && !authorize.includes(currentUser.user_type)
+			&& (currentUser.user_type !== 1)) {
+			alert("Нет доступа")
 			return next({path: '/home'});
 		}
 	}
 	next();
 })
-Vue.component(Vodal.name, Vodal)
-Vue.use(BootstrapVue)
-Vue.use(IconsPlugin)
-Vue.use(ModalPlugin)
 
+Vue.component(Vodal.name, Vodal)
+
+Vue.use(ModalPlugin)
 Vue.component('Modal', VueModal)
 
+Vue.use(BootstrapVue)
+Vue.use(IconsPlugin)
 new Vue({
 	VueTree,
 	vuetify,
