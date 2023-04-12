@@ -5,37 +5,16 @@ export function wait(delay) {
 		setTimeout(resolve, delay);
 	});
 }
-export function redirecting(link, store, router) {
-	switch (link){
-		case 'subject':
-			store.dispatch('initialize');
-			store.dispatch('initSubjects');
-			router.push({name:'subjects_list'});
-			break;
-		case 'user':
-			store.dispatch('initUsers');
-			router.push({name:'users_list'});
-			break;
-		case 'company':
-			store.dispatch('initialize');
-			router.push({name:'companies_list'});
-			break;
-		case 'feedback':
-			store.dispatch('initFeedbacks');
-			store.dispatch('initUsers');
-			store.dispatch('initSubjects');
-			router.push({name:'feedbacks_list'});
-			break;
-		default:
-			router.go();
-			break
-	}
-}
 export const Role = {
-	Teacher: 'teacher',
-	Student: 'student',
-	Admin: 'admin'
+	Teacher: 1,
+	Student: 2,
+	Admin: 0
 }
+export const Test_Types = {
+	Standard: 1,
+	Tree_test: 2
+}
+export const BASE_URL = "http://localhost:8000/"
 export function handleResponse(response) {
 	return response.text().then(text => {
 		const data = text && JSON.parse(text);
@@ -88,4 +67,8 @@ export function formatInputTime(date) {
 		hh = '0' + hh;
 	return `${hh}:${mm}`;
 }
+
+
+
+
 
