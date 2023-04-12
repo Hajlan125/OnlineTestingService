@@ -33,8 +33,8 @@
 			flat
 			height="50px"
 			tile>
-			<b-button @click="$router.push({name: 'tests_list'})" pill v-if="currentUser.user_type === ('admin') || currentUser.user_type === ('teacher')">Список тестов</b-button>
-			<b-button pill v-if="currentUser.user_type === ('admin')" @click="$router.push({name: 'admin_panel'})">Панель администрирования</b-button>
+			<b-button @click="$router.push({name: 'tests_list'})" pill v-if="currentUser.user_type === (1) || currentUser.user_type === ('teacher')">Список тестов</b-button>
+			<b-button pill v-if="currentUser.user_type === 1" @click="$router.push({name: 'admin_panel'})">Панель администрирования</b-button>
 		</v-app-bar>
 		<div class="wrapper-main">
 			<div id="formContent">
