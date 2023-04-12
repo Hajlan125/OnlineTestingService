@@ -9,6 +9,10 @@ import TestService from "../Services/TestService";
 import UserService from "../Services/UserService";
 
 import axios from "axios";
+import UserTypeService from "../Services/UserTypeService";
+import TestTypeService from "../Services/TestTypeService";
+import QuestionTypeService from "../Services/QuestionTypeService";
+import ParallelBlockService from "../Services/ParallelBlockService";
 
 Vue.use(Vuex)
 
@@ -21,23 +25,37 @@ export const store = new Vuex.Store({
 		users: [],
 		questions: [],
 		expandQuestions: [],
-		scores: [],
+		user_types: [],
 		testingSystems: [],
 		tests: [],
 		alertText: "",
 		currentTest: [],
+		test_types: [],
+		question_types: [],
+		parallel_blocks: []
 	},
 	getters: {
 
 	},
 	mutations: {
+		'SET_PARALLEL_BLOCKS'(state, parallel_blocks){
+			state.parallel_blocks = parallel_blocks;
+		},
+		'SET_QUESTION_TYPES'(state, question_types){
+			state.question_types = question_types;
+		},
+		'SET_TEST_TYPES'(state, test_types){
+			state.test_types = test_types;
+		},
+		'SET_USER_TYPES'(state, user_types){
+			state.user_types = user_types;
+		},
 		'SET_CURRENT_TEST'(state, test){
 			state.currentTest = test;
 		},
 		'SET_PASSING_QUESTION'(state, questions) {
 			state.questions = questions;
 		},
-
 		'SET_ANSWERS'(state, answers){
 			state.answers = answers;
 		},
@@ -63,6 +81,12 @@ export const store = new Vuex.Store({
 			state.alertText = alertText;
 		},
 
+		'ADD_PARALLEL_BLOCK_ITEM'(state, p_b_item){
+			state.parallel_blocks.push(p_b_item)
+		},
+		'ADD_USER_TYPE_ITEM'(state, type) {
+			state.user_types.push(type)
+		},
 		'ADD_ANSWER_ITEM'(state, answer) {
 			state.answers.push(answer);
 		},
@@ -79,6 +103,10 @@ export const store = new Vuex.Store({
 			state.tests.push(test)
 		},
 
+		'EDIT_USER_TYPE_ITEM' (state, type) {
+			const item = state.user_types.find(item => item.type_u_id === type.type_u_id)
+			Object.assign(item, type)
+		},
 		'EDIT_ANSWER_ITEM'(state, answer) {
 			const item = state.answers.find(item => item.answ_id === answer.answ_id);
 			Object.assign(item, answer);
@@ -127,6 +155,39 @@ export const store = new Vuex.Store({
 
 	},
 	actions: {
+		async init_parallel_blocks(context) {
+			try {
+				const response = await ParallelBlockService.get_parallel_blocks();
+				context.commit('SET_PARALLEL_BLOCKS', response.data);
+			} catch (error) {
+				alert('init parallel blocks ERROR')
+			}
+		},
+		async initQuestionTypes(context) {
+			try {
+				const response = await QuestionTypeService.get_question_types();
+				context.commit('SET_QUESTION_TYPES', response.data);
+			} catch (error) {
+				alert('init question type ERROR')
+			}
+		},
+		async initTestType(context) {
+			try {
+				const response = await TestTypeService.get_test_types();
+				context.commit('SET_TEST_TYPES', response.data);
+			} catch (error) {
+				alert('init test types ERROR')
+			}
+		},
+		async initUserTypes(context) {
+			try {
+				const response = await UserTypeService.get_user_list();
+				context.commit('SET_USER_TYPES', response.data);
+			} catch (error) {
+				// context.commit('SET_ALERT_TEXT', "ERROR");
+				alert('initUserType ERROR')
+			}
+		},
 		async initCurrentTest(context, id) {
 			try {
 				const response = await TestService.getTestById(id);
@@ -213,6 +274,23 @@ export const store = new Vuex.Store({
 			}
 		},
 
+		async add_parallel_block_item(context, item) {
+			try {
+				const response = await ParallelBlockService.post_parallel_block(item);
+				context.commit("ADD_PARALLEL_BLOCK_ITEM", response.data);
+			} catch (error) {
+				alert('add_parallel_block_item ERROR')
+			}
+		},
+		async add_user_type_item(context, item) {
+			try {
+				const response = await UserTypeService.post_user_type(item);
+				context.commit("ADD_USER_TYPE_ITEM", response.data);
+			} catch (error) {
+				alert('add_user_type error')
+				context.commit("SET_ALERT_TEXT", "ERROR TRY AGAIN");
+			}
+		},
 		async addAnswerItem(context, item) {
 			try {
 				const response = await AnswerService.postAnswer(item);
@@ -231,7 +309,7 @@ export const store = new Vuex.Store({
 		},
 		async addQuestionItem(context, item) {
 			try {
-				const response = await QuestionService.postQuestion(item);
+				let response = await QuestionService.postQuestion(item)
 				context.commit("ADD_QUESTION_ITEM", response.data);
 			} catch (error) {
 				context.commit('SET_ALERT_TEXT', "ERROR TRY AGAIN");
@@ -257,6 +335,14 @@ export const store = new Vuex.Store({
 			}
 		},
 
+		async edit_user_type_item(context, item){
+			try {
+				const response = await UserTypeService.put_user_type(item.type_u_id, item);
+				context.commit("EDIT_USER_TYPE_ITEM", response.data);
+			} catch (error) {
+				context.commit("SET_ALERT_TEXT", "ERROR TRY AGAIN");
+			}
+		},
 		async editAnswerItem(context, item) {
 			try {
 				const response = await AnswerService.putAnswer(item.answ_id, item);
@@ -301,11 +387,11 @@ export const store = new Vuex.Store({
 		},
 		async editTestItem(context, item) {
 			try {
-				const response = await TestService.putTest(item.id, item);
+				const response = await TestService.putTest(item.test_id, item);
 				context.commit("EDIT_TEST_ITEM", response.data);
 			} catch (error) {
 				context.commit('SET_ALERT_TEXT', "ERROR TRY AGAIN");
-				alert("error")
+				alert("editTestItem error")
 			}
 		},
 
