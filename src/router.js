@@ -2,7 +2,7 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 import App from './App';
 import TestPage from "./components/TestPage";
-import Companies from "./components/TestList";
+import TestList from "./components/TestList";
 import Loader from "./Loader";
 import QuestionPage from "./components/QuestionPage";
 import MainPage from "./components/MainPage";
@@ -22,7 +22,7 @@ export default new VueRouter({
 	routes: [
 		{path: "/", name: "loader", component: Loader },
 		{path: "/app", name: "app", component: App},
-		{path: "/tests", name: "tests_list",component: Companies,
+		{path: "/tests", name: "tests_list",component: TestList,
 											meta: {authorize: [Role.Admin, Role.Teacher]}},
 		{path: "/test/:id", name:"test_page", component: TestPage},
 		{path: "/test/:id/question/:q_id", name:"question_by_test", component: QuestionPage},
