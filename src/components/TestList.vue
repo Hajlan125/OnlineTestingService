@@ -52,12 +52,17 @@
 					<template #cell(Создатель)="data">
 						{{getUserName(data.item.test_creator)}}
 					</template>
-					<template #cell(Древовидность)="data">
-						<p class="h3 mb-2"><b-icon v-if="data.item.is_tree" icon="check-square" variant="success"></b-icon>
-							<b-icon v-else icon="x-square" variant="danger"></b-icon></p>
+					<template #cell(ТипТеста)="data">
+						{{get_test_type_name(data.item.test_type)}}
+					</template>
+					<template #cell(learning_material_edit)="data">
+						<b-button v-b-modal.learning-material-modal @click="show_learning_material_modal(data.item.test_id)"
+											variant="outline-secondary">
+							<b-icon icon="pencil-square" variant="warning"></b-icon>
+						</b-button>
 					</template>
 					<template #cell(edit)="data">
-						<b-button @click="redirect(data.item.is_tree, data.item.test_id)" variant="outline-secondary">
+						<b-button @click="redirect(data.item.test_type, data.item.test_id)" variant="outline-secondary">
 							<b-icon icon="pencil-square" variant="warning"></b-icon>
 						</b-button>
 					</template>
@@ -130,10 +135,20 @@
 				<b-form-group label="Дисциплина" label-for="test-subject-input">
 					<b-form-input v-model="test_item.test_subject" id="test-subject-input"></b-form-input>
 				</b-form-group>
-				<b-radio-group label="Древовидность" v-model="test_item.is_tree">
-					<b-form-radio :value="true">Да</b-form-radio>
-					<b-form-radio :value="false">Нет</b-form-radio>
-				</b-radio-group>
+				<b-form-group label="Тип" label-for="test-type-select">
+					<b-form-select required id="test-type-select" v-model="test_item.test_type"
+												 :options=test_type_options value-field="type_t_id" text-field="type_test"></b-form-select>
+				</b-form-group>
+			</b-modal>
+
+		</div>
+		<div class="learning-material-modal" title="Учебный материал">
+			<b-modal no-fade title="Учебный материал" id="learning-material-modal" @ok="handle_add_learning_material"
+							 @hide="resetModal" ok-variant="success" cancel-title="Отмена">
+				<b-form-group label="Учебный материал теста" label-for="learning-material-input">
+					<b-form-textarea rows="20" size="large" v-model="test_learning_material_item.test_learning_material"
+													 id="test-l-m-input"></b-form-textarea>
+				</b-form-group>
 			</b-modal>
 
 		</div>
@@ -141,38 +156,47 @@
 </template>
 
 <script>
-import TestService from "../Services/TestService";
 import { authenticationService} from "../authentication.service";
-import {mapState, mapActions} from "vuex";
-import {wait, redirecting, formatDate} from "../utils";
+import {Test_Types, Role} from "../utils";
 
 export default {
-	name: "Companies",
+	name: "TestList",
 	data() {
 		return{
 			test_id: 0,
+			test_type_options: [],
 			user: "",
 			currentUser: authenticationService.currentUserValue,
-			fields: ['ID', 'Название', 'Дисциплина', 'ДатаСоздания', 'Создатель', 'Древовидность', 'edit', 'delete', 'results'],
-			result_fields: [{key: 'ts_user_id', sortable: true}, {key: 'ts_end_time', sortable: true}, {key: 'ts_score_id', sortable: true}],
+			fields: ['ID', 'Название', 'Дисциплина', 'ДатаСоздания', 'Создатель', 'ТипТеста',
+				'learning_material_edit', 'edit', 'delete', 'results'],
+			result_fields: [{key: 'ts_user_id', sortable: true}, {key: 'ts_end_time', sortable: true},
+				{key: 'ts_score_id', sortable: true}],
 			test_item: {
 				test_name: "",
 				test_subject: "",
 				test_creator: authenticationService.currentUserValue.user_id,
-				is_tree: false
+				test_type: null,
+				test_learning_material: "Учебный материал"
+			},
+			test_learning_material_item: {
+				test_id: 0,
+				test_learning_material: "Учебный материал"
 			}
 		}
 	},
 	created() {
-		this.$store.dispatch("initUsers")
-		this.$store.dispatch('initTest')
-		this.$store.dispatch('initTestingSystem')
+		// this.$store.dispatch("initUsers")
+		// this.$store.dispatch('initTest')
+		// this.$store.dispatch('initTestingSystem')
 	},
 	mounted() {
 		this.$store.dispatch("initUsers")
 		this.$store.dispatch('initTest')
 		this.$store.dispatch('initTestingSystem')
-		this.$store.dispatch('initScore')
+		this.$store.dispatch('initTestType')
+		this.$store.dispatch('initUserTypes')
+		this.test_type_options = [...[{'type_t_id': null, 'type_test': 'Выберите тип'}], ...this.test_types_list]
+		// this.$store.dispatch('initScore')
 		// this.$store.dispatch('initExpandQuestions')
 
 		// if (localStorage.getItem('currentUser')) {
@@ -190,6 +214,9 @@ export default {
 	},
 
 	methods: {
+		alerts(id) {
+			alert(id)
+		},
 		getFormatDate(date) {
 			return new Date(date).toLocaleDateString('ru-RU');
 		},
@@ -217,20 +244,24 @@ export default {
 					// An error occurred
 				})
 		},
-		redirect(is_tree, id) {
-			if (is_tree) {
+		redirect(type, id) {
+			if (type === Test_Types.Tree_test) {
 				this.$router.push({path: `/tree_test/${id}`})
-			} else {
+			} else if (type === Test_Types.Standard) {
 				this.$router.push({path: `/test/${id}`})
 			}
 		},
 		async handleRemoveClick(e, id) {
 			await this.$store.dispatch("removeTestItem", id);
+			await this.$store.dispatch('initTest')
 			// await this.$store.dispatch("initTest");
 			// await this.$router.go();
 		},
 		getUserName(id) {
 			return this.$store.state.users.find(item => item.user_id === id).user_name;
+		},
+		get_test_type_name(id) {
+			return this.test_types_list.find(item => item.type_t_id === id).type_test;
 		},
 		logout() {
 			authenticationService.logout();
@@ -240,31 +271,50 @@ export default {
 			this.test_id = id;
 			// this.$bvModal.show('results-modal')
 		},
+		show_learning_material_modal(test_id) {
+			this.test_learning_material_item = {
+				test_id: test_id,
+				test_learning_material: this.testsList.find(item => item.test_id === test_id).test_learning_material
+			}
+		},
 		resetModal() {
 			this.test_item = {
 				test_name: "",
 				test_subject: "",
-				is_tree: false
+				test_type: null
+			}
+			this.test_learning_material_item = {
+				test_id: 0,
+				test_learning_material: "Учебный материал"
 			}
 		},
 		async handleSubmitTest() {
+			// alert(this.test_item.test_type)
 			await this.$store.dispatch('addTestItem', this.test_item)
+		},
+		async handle_add_learning_material() {
+			// alert(JSON.stringify(this.test_learning_material_item))
+			await this.$store.dispatch('editTestItem', this.test_learning_material_item)
+			await this.$store.dispatch('initTest')
 		}
 	},
 	computed: {
 		usersList() {
 			return this.$store.state.users;
 		},
-		testsList() {
-			if (this.user.user_type === "teacher") {
-				return this.$store.state.tests.filter(item => item.test_creator === this.user.user_id);
+		testsList() {  // ДОБАВИТЬ ЗАВИСИМОСТЬ ОТ УРОВНЯ ДОСТУПА
+			if (this.user.user_type === 1) {
+				return this.$store.state.tests;
 			}
 			else {
-				return this.$store.state.tests;
+				return this.$store.state.tests.filter(item => item.test_creator === this.user.user_id);
 			}
 		},
 		testingSystemList() {
 			return this.$store.state.testingSystems.sort((a,b) => a.ts_end_time - b.ts_end_time)
+		},
+		test_types_list() {
+			return this.$store.state.test_types
 		}
 	},
 
