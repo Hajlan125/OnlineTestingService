@@ -50,11 +50,9 @@ export default {
 	},
 
 	created () {
-		// redirect to home if already logged in
 		if (authenticationService.currentUserValue) {
 			return this.$router.push('/home');
 		}
-
 	},
 	methods: {
 		async onSubmit() {
