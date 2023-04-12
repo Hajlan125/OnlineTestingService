@@ -31,6 +31,7 @@
 		<div>
 			<b-tabs pills card style="width: 95%; margin-left: auto; margin-right: auto;" content-class="mt-3">
 				<b-tab title="Список пользователей">
+					<b-button @click="showChangingPasswordModal(currentUser.user_id)" variant="primary">Изменить собственный пароль</b-button>
 					<b-card>
 						<b-button class="button-71" @click="showUserModal(0)">Добавить</b-button>
 						<b-table fixed :items="userList" :fields="fields">
@@ -54,7 +55,7 @@
 						</b-table>
 					</b-card>
 				</b-tab>
-				<b-tab v-on:click.once="loadScores" title="Список оценок">
+				<b-tab v-on:click.once="load_user_types" title="Типы пользователей">
 					<b-skeleton-wrapper :loading="loading">
 						<template #loading>
 							<b-card>
@@ -64,12 +65,21 @@
 							</b-card>
 						</template>
 						<b-card>
-							<b-table :items="scoreList" :fields="score_fields">
+							<b-button class="button-71" @click="show_user_type_edit_modal(0)">Добавить</b-button>
+							<b-table :items="user_type_list" :fields="user_types_fields">
 								<template #cell(edit)="data">
-									<b-button @click="showScoreModal(data.item.score_id)" variant="outline-warning">
+									<b-button @click="show_user_type_edit_modal(data.item.type_u_id)" variant="outline-warning">
 										<b-icon icon="pencil-square"></b-icon>
 										Изменить
 									</b-button>
+								</template>
+								<template #cell(delete)="data">
+									<b-button v-if="data.item.type_u_id > 2" @click="alert('delete type')">
+										Удалить
+									</b-button>
+									<p1 v-else>
+										Удаление запрещено
+									</p1>
 								</template>
 							</b-table>
 						</b-card>
@@ -78,14 +88,16 @@
 			</b-tabs>
 		</div>
 		<div>
-			<b-modal id="score-modal" no-fade title="Изменение текста оценки">
+			<b-modal id="type-modal" no-fade title="Изменение типа пользователя">
 				<template #default>
-					<label for="score-input">Текст оценки</label>
-					<b-form-input v-on:keyup.enter="submitScore($event)" id="score-input" v-model="score_item.score_text"></b-form-input>
+					<label for="type-input">Тип пользователя</label>
+					<b-form-input id="type-input" v-model="user_type_item.type_user"></b-form-input>
+					<label for="type-access-level-input">Уровень доступа</label>
+					<b-form-input id="type-access-level-input" v-model="user_type_item.access_level" type="number"></b-form-input>
 				</template>
 				<template #modal-footer="{ok, cancel}">
 					<div class="text-left">
-						<b-button @click="submitScore($event)" variant="success">OK</b-button>
+						<b-button @click="submit_user_type($event)" variant="success">OK</b-button>
 						<b-button @click="cancel" variant="danger">Отмена</b-button>
 					</div>
 				</template>
@@ -100,7 +112,7 @@
 							<b-form-input required id="user-name-input" v-model="user_item.user_name" placeholder="Введите ФИО пользователя"></b-form-input>
 						</b-form-group>
 						<b-form-group label="Тип" label-for="user-type-input">
-							<b-form-select required id="user-type-input" v-model="user_item.user_type" :options="options"></b-form-select>
+							<b-form-select required id="user-type-input" v-model="user_item.user_type" :options=user_type_options value-field="type_u_id" text-field="type_user"></b-form-select>
 						</b-form-group>
 						<b-form-group v-if="user_item.user_id === 0" label="Логин" label-for="user-login-input">
 							<b-form-input required id="user-login-input" v-model="user_item.login" placeholder="Введите логин"></b-form-input>
@@ -136,7 +148,7 @@
 				</template>
 				<template #modal-footer="{ cancel }">
 					<b-btn @click="cancel">Отмена</b-btn>
-					<b-btn variant="success" type="submit" form="user-form">OK</b-btn>
+					<b-btn variant="success" @click="submitNewPassword($event, user_item.user_id)">OK</b-btn>
 				</template>
 			</b-modal>
 		</div>
@@ -154,9 +166,12 @@ export default {
 	name: "AdminPanel",
 	created() {
 		this.$store.dispatch('initUsers')
+		this.$store.dispatch('initUserTypes')
 	},
 	mounted() {
 		this.$store.dispatch('initUsers')
+		this.$store.dispatch('initUserTypes')
+		this.user_type_options = [...[{'type_u_id': null, 'type_user': 'Выберите тип'}], ...this.user_type_list]
 	},
 	data() {
 		return {
@@ -164,31 +179,30 @@ export default {
 			loading: true,
 			password_hide: true,
 			fields: ['user_id', 'user_name', 'user_type', 'login', 'password', 'edit', 'delete'],
-			score_fields: ['score_id', 'score_text', 'edit'],
+			user_types_fields: ['type_u_id', 'type_user', 'access_level', 'edit', 'delete'],
 			currentUser: authenticationService.currentUserValue,
 			options: [
 				{ value: null, text: 'Пожалуйста, выберите тип' },
-				{ value: 'admin', text: 'Администратор' },
+				{ value: 1, text: 'Администратор' },
 				{ value: 'teacher', text: 'Преподаватель'},
 				{ value: 'student', text: 'Студент' },
 			],
+			user_type_options: [],
 			name: "",
-			score_item: {
-				score_id: 0,
-				score_text: ""
-			},
 			user_item: {
 				user_id: 0,
 				user_name: "",
-				user_type: "",
+				user_type: 0,
 				login: "",
-				password: "",
-				create_test_permission: false
+				password: ""
+			},
+			user_type_item: {
+				type_u_id: 0,
+				type_user: "",
+				access_level: 99
 			},
 			is_new: true,
-			score_id: 0,
-			score_text: "",
-
+			is_new_type: true,
 			new_password: "",
 			alert_show: false
 		}
@@ -220,6 +234,7 @@ export default {
 		async handleRemoveUser(e, id) {
 			e.preventDefault()
 			await this.$store.dispatch('removeUserItem', id)
+			await this.$store.dispatch('initUsers')
 		},
 
 		showUserModal(user_id) {
@@ -227,10 +242,9 @@ export default {
 				this.user_item= {
 					user_id: 0,
 					user_name: "",
-					user_type: "",
+					user_type: 98,
 					login: "",
 					password: "",
-					create_test_permission: false
 				}
 				this.is_new = true
 			} else {
@@ -241,7 +255,6 @@ export default {
 					user_type: item.user_type,
 					login: item.login,
 					password: item.password,
-					create_test_permission: item.create_test_permission
 				}
 				this.is_new = false
 			}
@@ -254,6 +267,7 @@ export default {
 					this.alert_show = true
 				} else {
 					this.user_item.password = bcrypt.hashSync(this.user_item.password, 10)
+					alert(this.user_item.user_type)
 					await this.$store.dispatch('addUserItem', this.user_item)
 					this.$bvModal.hide('user-modal')
 					this.alert_show = false
@@ -264,26 +278,56 @@ export default {
 
 		},
 
-		showScoreModal(score_id) {
-			this.score_item.score_id = score_id
-			this.score_item.score_text = this.scoreList.find(item => item.score_id === score_id).score_text
-			this.$bvModal.show('score-modal')
+		show_user_type_edit_modal(type_id) {
+			if (type_id === 0) {
+				this.user_type_item = {
+					type_u_id: 0,
+					type_user: "",
+					access_level: 99
+				}
+				this.is_new_type = true
+			} else {
+				const item = this.user_type_list.find(item => item.type_u_id === type_id)
+				this.user_type_item = {
+					type_u_id: item.type_u_id,
+					type_user: item.type_user,
+					access_level: item.access_level
+				}
+				this.is_new_type = false
+			}
+			this.$bvModal.show('type-modal')
 		},
-		async submitScore(e) {
+
+		async submit_user_type(e) {
 			e.preventDefault()
-			await this.$store.dispatch('editScoreItem', this.score_item)
-			this.$bvModal.hide('score-modal')
+			alert(JSON.stringify(this.user_type_item))
+			if (this.user_type_item.type_u_id === 0) {
+				await this.$store.dispatch('add_user_type_item', this.user_type_item)
+			} else {
+				await this.$store.dispatch('edit_user_type_item', this.user_type_item)
+			}
+			await this.$store.dispatch('initUserTypes')
+			this.$bvModal.hide('type-modal')
 		},
 
 		showChangingPasswordModal(user_id) {
 			const item = this.userList.find(item => item.user_id === user_id)
-			this.user_item= {
-				user_id: item.user_id,
-				user_name: item.user_name,
-				user_type: item.user_type,
-				login: item.login,
-				password: item.password,
-				create_test_permission: item.create_test_permission
+			if (item) {
+				this.user_item= {
+					user_id: item.user_id,
+					user_name: item.user_name,
+					user_type: item.user_type,
+					login: item.login,
+					password: item.password,
+				}
+			} else {
+				this.user_item= {
+					user_id: this.currentUser.user_id,
+					user_name: this.currentUser.user_name,
+					user_type: this.currentUser.user_type,
+					login: this.currentUser.login,
+					password: this.currentUser.password,
+				}
 			}
 			this.$bvModal.show('password-change-modal')
 		},
@@ -297,10 +341,11 @@ export default {
 			this.$bvModal.hide('password-change-modal')
 		},
 
-		loadScores() {
+		load_user_types() {
 			this.$nextTick(async () => {
 				this.loading = true;
-				await this.$store.dispatch('initScore')
+				await this.$store.dispatch('initUserTypes')
+				// await this.$store.dispatch('initScore')
 				await wait(500);
 				this.loading = false;
 			});
@@ -309,8 +354,8 @@ export default {
 			authenticationService.logout()
 			this.$router.push({name: 'login'})
 		},
-		alert() {
-			alert('clicked')
+		alert(smth) {
+			alert(smth)
 		},
 		replaceChars(string) {
 			let str = ""
@@ -339,20 +384,31 @@ export default {
 			let syllable_2 = ["bane", "beck", "borne", "borough", "bourn", "bourne", "bray", "bridge", "burgh", "burn", "burton", "bury", "by", "chester", "comb", "combe", "con", "cost", "culme", "dal", "der", "dish", "don", "dor", "e", "east", "ent", "ern", "es", "farn", "fel", "field", "font", "ford", "frith", "glade", "glen", "gold", "gomery", "ham", "hampton", "house", "how", "hurst", "iard", "keep", "kirk", "lade", "land", "leigh", "leon", "ley", "lingham", "low", "meet", "mel", "mere", "minster", "moot", "mouth", "nard", "ne", "nes", "newton", "ney", "noller", "nor", "on", "pas", "peck", "rest", "ridge", "scott", "sey", "shire", "silver", "sley", "spring", "stock", "stoke", "ston", "stone", "sward", "swear", "tage", "ter", "tol", "ton", "ton", "ton", "ton", "ton", "ton", "ton", "ton", "ton", "ton", "town", "vale", "vern", "wall", "water", "well", "went", "west", "wick", "wood", "worth", "worthy", "yard"];
 
 			let login = syllable_1[Math.round(Math.random()*(200 - 1))] + syllable_2[Math.round(Math.random()*(110 - 1))]
-			this.user_item.login = (login)
-
+			if (this.$store.state.users.find(item => item.login === this.user_item.login)) {
+				this.generate_login()
+			} else {
+				this.user_item.login = (login)
+			}
 		}
 	},
 	computed: {
 		userList() {
 			return this.$store.state.users.filter(item => item.user_id !== this.currentUser.user_id).sort((a, b) => a.user_id - b.user_id)
 		},
-		scoreList() {
-			return this.$store.state.scores.sort((a,b) => a.score_id - b.score_id)
-		},
+		// scoreList() {
+		// 	return this.$store.state.scores.sort((a,b) => a.score_id - b.score_id)
+		// },
 		getCheck() {
 			return this.document.getElementById('checkbox').checked
 		},
+		user_type_list() {
+			// let options = []
+			// options.push({'type_u_id': null, 'type_u': "Выберите тип"})
+			// for (let i in this.$store.state.user_types){
+			// 	options.push({'type_u_id': i.type_u_id, 'type_u': i.type_u})
+			// }
+			return this.$store.state.user_types
+		}
 	}
 }
 </script>
