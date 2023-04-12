@@ -127,10 +127,6 @@
 </template>
 
 <script>
-import TestService from "../Services/TestService";
-
-import {mapState, mapActions} from "vuex";
-import {wait, redirecting} from "../utils";
 import {authenticationService} from "../authentication.service";
 
 export default {
