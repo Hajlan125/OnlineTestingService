@@ -33,7 +33,7 @@
 		</v-app-bar>
 		<h1 class="text-center">Тест {{parseInt(this.$route.params.id)}}</h1>
 		<h2 class = "text-center">Список вопросов</h2>
-		<b-table :items="questionsList"
+		<b-table :items="questionsList.filter(item => item.q_parallel_block_id === null)"
 						 :fields="fields" striped responsive="sm" outlined fixed
 						 style="margin-left: auto; margin-right: auto; width: 90%">
 			<template #cell(Ответы)="row">
@@ -45,6 +45,7 @@
 				<b-tr>
 					<b-th colspan="5">
 						<b-button variant="primary" @click="showQuestionModalWindow(0)">Добавить новый вопрос</b-button>
+						<b-button variant="primary" @click="show_parallel_block_modal_window()">Добавить блок параллельных вопросов</b-button>
 					</b-th>
 				</b-tr>
 			</template>
@@ -57,7 +58,8 @@
 						responsive="sm"
 					>
 						<template #cell(edit) = "answ_edit">
-							<b-button variant="outline-warning" @click="showAnswerModalWindow(answ_edit.item.answ_id, row.item.q_id)">
+							<b-button variant="outline-warning"
+												@click="showAnswerModalWindow(answ_edit.item.answ_id, row.item.q_id, row.item.q_type === Question_Types.Comparison)">
 								<b-icon icon="pencil-square"></b-icon>
 								Изменить
 							</b-button>
@@ -78,8 +80,13 @@
 							Правильный
 						</template>
 						<template #cell(is_correct)="data">
-							<p class="h3 mb-2"><b-icon v-if="data.item.is_correct" icon="check-square" variant="success"></b-icon>
-							<b-icon v-else icon="x-square" variant="danger"></b-icon></p>
+							<div v-if="row.item.q_type !== Question_Types.Comparison">
+								<p class="h3 mb-2"><b-icon v-if="data.item.is_correct" icon="check-square" variant="success"></b-icon>
+									<b-icon v-else icon="x-square" variant="danger"></b-icon></p>
+							</div>
+							<div v-else>
+								<p>{{data.item.answ_comparison_text}}</p>
+							</div>
 						</template>
 						<template #head(edit)="data">
 							<h1></h1>
@@ -88,10 +95,10 @@
 							<h1></h1>
 						</template>
 						<template #cell(answ_id)="data">
-							{{data.index + 1}}
+							{{data.item.answ_id}}
 						</template>
 					</b-table>
-					<b-button variant="primary" @click="showAnswerModalWindow(0, row.item.q_id)">
+					<b-button variant="primary" @click="showAnswerModalWindow(0, row.item.q_id, row.item.q_type === 3)">
 						<b-icon icon="plus"></b-icon>
 						Добавить
 					</b-button>
@@ -103,6 +110,9 @@
 					Изменить
 				</b-button>
 			</template>
+			<template #cell(q_type)="row">
+				<p>{{question_types_list.find(item => item.type_q_id === row.item.q_type).type_q}}</p>
+			</template>
 			<template #cell(delete)="row">
 				<b-button variant="outline-danger" class="mr-2" @click="showMsgBoxOne($event, row.item.q_id, 'вопрос')">
 					<b-icon icon="trash"></b-icon>
@@ -113,7 +123,7 @@
 				№
 			</template>
 			<template #cell(q_id)="row">
-				{{row.index + 1}}
+				{{row.item.q_id}}
 			</template>
 			<template #head(q_title)="row">
 				Текст вопроса
@@ -125,6 +135,119 @@
 				<h1></h1>
 			</template>
 
+		</b-table>
+
+		<h1>Параллельные вопросы</h1>
+		<b-table :items="parallel_blocks_list" :fields="p_b_fields" striped responsive="sm" outlined fixed
+						 style="margin-left: auto; margin-right: auto; width: 90%">
+			<template #cell(questions)="row">
+				<b-button size="sm" @click="row.toggleDetails" variant="outline-primary" class="mr-2">
+					{{ row.detailsShowing ? 'Скрыть' : 'Показать'}}
+				</b-button>
+			</template>
+			<template #row-details="row">
+				<b-table :items="questionsList.filter(item => item.q_parallel_block_id === row.item.p_b_id)"
+								 :fields="fields" striped responsive="sm" outlined fixed
+								 style="margin-left: auto; margin-right: auto; width: 90%">
+					<template #cell(Ответы)="row">
+						<b-button size="sm" @click="row.toggleDetails" variant="outline-primary" class="mr-2">
+							{{ row.detailsShowing ? 'Скрыть' : 'Показать'}}
+						</b-button>
+					</template>
+					<template #thead-top="data">
+						<b-tr>
+							<b-th colspan="5">
+								<b-button variant="primary" @click="showQuestionModalWindow(0, row.item.p_b_id, row.item.q_type === Question_Types.Comparison)">Добавить новый вопрос</b-button>
+							</b-th>
+						</b-tr>
+					</template>
+					<template #row-details="row">
+						<b-card>
+							<b-table
+								id = "answer-table" fixed
+								:items="answersList.filter(item => item.answ_question_id === row.item.q_id)"
+								:fields="answer_fields"
+								responsive="sm"
+							>
+								<template #cell(edit) = "answ_edit">
+									<b-button variant="outline-warning" @click="showAnswerModalWindow(answ_edit.item.answ_id, row.item.q_id, row.item.q_type === Question_Types.Comparison)">
+										<b-icon icon="pencil-square"></b-icon>
+										Изменить
+									</b-button>
+								</template>
+								<template #cell(delete) = "answ_delete">
+									<b-button variant="outline-danger" @click="showMsgBoxOne($event, answ_delete.item.answ_id, 'ответ')">
+										<b-icon icon="trash"></b-icon>
+										Удалить
+									</b-button>
+								</template>
+								<template #head(answ_id)="data">
+									№
+								</template>
+								<template #head(answ_text)="data">
+									Текст ответа
+								</template>
+								<template #head(is_correct)="data">
+									Правильный
+								</template>
+								<template #cell(is_correct)="data">
+									<div v-if="row.item.q_type !== Question_Types.Comparison">
+										<p class="h3 mb-2"><b-icon v-if="data.item.is_correct" icon="check-square" variant="success"></b-icon>
+											<b-icon v-else icon="x-square" variant="danger"></b-icon></p>
+									</div>
+									<div v-else>
+										<p>{{data.item.answ_comparison_text}}</p>
+									</div>
+								</template>
+								<template #head(edit)="data">
+									<h1></h1>
+								</template>
+								<template #head(delete)="data">
+									<h1></h1>
+								</template>
+								<template #cell(answ_id)="data">
+									{{data.index + 1}}
+								</template>
+							</b-table>
+							<b-button variant="primary" @click="showAnswerModalWindow(0, row.item.q_id, row.item.q_type === Question_Types.Comparison)">
+								<b-icon icon="plus"></b-icon>
+								Добавить
+							</b-button>
+						</b-card>
+					</template>
+					<template #cell(edit)="row">
+						<b-button variant="outline-warning" class="mr-2" @click="showQuestionModalWindow(row.item.q_id)">
+							<b-icon icon="pencil-square"></b-icon>
+							Изменить
+						</b-button>
+					</template>
+					<template #cell(q_type)="row">
+						<p>{{question_types_list.find(item => item.type_q_id === row.item.q_type).type_q}}</p>
+					</template>
+					<template #cell(delete)="row">
+						<b-button variant="outline-danger" class="mr-2" @click="showMsgBoxOne($event, row.item.q_id, 'вопрос')">
+							<b-icon icon="trash"></b-icon>
+							Удалить
+						</b-button>
+					</template>
+					<template #head(q_id)="row">
+						№
+					</template>
+					<template #cell(q_id)="row">
+						{{row.item.q_id}}
+					</template>
+					<template #head(q_title)="row">
+						Текст вопроса
+					</template>
+					<template #head(edit)="row">
+						<h1></h1>
+					</template>
+					<template #head(delete)="row">
+						<h1></h1>
+					</template>
+
+				</b-table>
+			</template>
 		</b-table>
 
 		<div class="answ-modal">
@@ -187,6 +310,11 @@
 														placeholder="Введите текст вопроса" required>
 							</b-form-input>
 						</b-form-group>
+						<b-form-group label="Тип вопроса" label-for="q-type-selector">
+							<b-form-select id="q-type-selector" v-model="question_item.q_type"
+															 :options="question_types_list" value-field="type_q_id" text-field="type_q"></b-form-select>
+						</b-form-group>
+						<p>{{question_item.q_id}}</p>
 					</b-form>
 				</template>
 				<template #modal-footer="{ cancel, ok, hide }">
@@ -200,30 +328,108 @@
 				</template>
 			</b-modal>
 		</div>
+		<div class="parallel-block-modal">
+			<b-modal
+				id="p-b-modal"
+				ref="p-b-modal"
+				no-fade
+				title="Параллельный блок"
+			>
+				<template #modal-header="{ close }">
+					<!-- Эмулировать встроенное модальное действие кнопки закрытия заголовка -->
+					<b>Редактирование блока</b>
+				</template>
+				<template #default>
+					<b-form>
+						<b-form-group label="Название блока"
+													label-for="p-b-name-input">
+							<b-form-input id="p-b-name-input" v-model="p_b_item.p_b_name"
+														placeholder="Введите название блока" required>
+							</b-form-input>
+						</b-form-group>
+					</b-form>
+				</template>
+				<template #modal-footer="{ cancel, ok, hide }">
+					<!-- Кнопка с пользовательским значением триггера закрытия -->
+					<b-button size="sm" variant="outline-success" @click="handle_submit_parallel_block($event)">
+						Сохранить
+					</b-button>
+					<b-button size="sm" variant="outline-danger" @click="cancel">
+						Выход
+					</b-button>
+				</template>
+			</b-modal>
+		</div>
+		<div class="comparison-answer-modal">
+			<b-modal
+				id="comparison-answer-modal"
+				ref="comparison-answer-modal"
+				no-fade
+				title="Редактирование ответа"
+			>
+				<template #modal-header="{ close }">
+					<!-- Эмулировать встроенное модальное действие кнопки закрытия заголовка -->
+					<b>Редактирование ответа</b>
+				</template>
+				<template #default>
+					<b-form>
+						<b-form-group label="Первая часть"
+													label-for="answer-text-1-input">
+							<b-form-input id="answer-text-1-input" v-model="answer_item.answ_text"
+														placeholder="Введите текст ответа" required>
+
+							</b-form-input>
+						</b-form-group>
+						<b-form-group label="Вторая часть"
+													label-for="answer-text-2-input">
+							<b-form-input id="answer-text-2-input" v-model="answer_item.answ_comparison_text"
+														placeholder="Введите текст ответа" required>
+
+							</b-form-input>
+						</b-form-group>
+					</b-form>
+
+				</template>
+				<template #modal-footer="{ cancel, ok, hide }">
+					<!-- Кнопка с пользовательским значением триггера закрытия -->
+					<b-button size="sm" variant="outline-success" @click="handleSubmitAnswer($event)">
+						Сохранить
+					</b-button>
+					<b-button size="sm" variant="outline-danger" @click="cancel">
+						Выход
+					</b-button>
+				</template>
+			</b-modal>
+		</div>
 	</div>
 </template>
 
 <script>
-import TestService from "../Services/TestService";
-
-import {mapState, mapActions} from "vuex";
-import {wait, redirecting} from "../utils";
 import {authenticationService} from "../authentication.service";
-
+import {Question_Types} from "../utils";
 
 export default {
 	created() {
+		// this.$store.dispatch('initPassingQuestions');
+		// this.$store.dispatch('initAnswers');
+	},
+	mounted() {
 		this.$store.dispatch('initPassingQuestions');
 		this.$store.dispatch('initAnswers');
+		this.$store.dispatch('initQuestionTypes');
+		this.$store.dispatch('init_parallel_blocks');
 	},
 	data() {
 		return {
+			Question_Types,
 			id: parseInt(this.$route.params.id),
-			fields: ['q_id', 'q_title', "Ответы", 'edit', 'delete'],
+			fields: ['q_id', 'q_title', 'q_type', "Ответы", 'edit', 'delete'],
+			p_b_fields: ['p_b_id', 'p_b_name', 'questions', 'edit', 'delete'],
 			answer_fields: ['answ_id', 'answ_text', 'is_correct', 'edit', 'delete'],
 
 			q_title: "",
 			q_test_id: parseInt(this.$route.params.id),
+			parallel_connection: false,
 
 			answ_text: "",
 			answ_question_id: 0,
@@ -237,14 +443,21 @@ export default {
 				answ_text: "",
 				answ_question_id: 0,
 				is_correct: false,
+				answ_comparison_text: ""
 			},
 			question_item: {
 				q_id: 0,
 				q_title: "",
 				q_test_id: parseInt(this.$route.params.id),
-				q_chance: 100
+				q_connection_id: 0,
+				q_type: 1,
+				q_parallel_block_id: 0
 			},
-
+			p_b_item: {
+				p_b_name: "Параллельный блок",
+				p_b_test_id: parseInt(this.$route.params.id)
+			},
+			p_b_is_new: true,
 			currentUser: JSON.parse(localStorage.getItem('currentUser')),
 			selected: []
 		};
@@ -263,11 +476,12 @@ export default {
 				title: "Успешно"
 			})
 		},
-		showAnswerModalWindow(answ_id, q_id) {
+		showAnswerModalWindow(answ_id, q_id, comparison=false) {
 			if (answ_id === 0) {
 				this.answer_item.answ_id = 0
 				this.answer_item.answ_text = ""
 				this.answer_item.answ_question_id = q_id
+				this.answer_item.answ_comparison_text = ""
 				this.answer_item.is_correct = false
 				this.is_new = true
 			} else {
@@ -276,22 +490,36 @@ export default {
 				this.answer_item.answ_text = item.answ_text
 				this.answer_item.answ_question_id = item.answ_question_id
 				this.answer_item.is_correct = item.is_correct
+				this.answer_item.answ_comparison_text = item.answ_comparison_text
 				this.is_new = false
 			}
-			this.$bvModal.show('answer-modal')
+			if (comparison) {
+				this.$bvModal.show('comparison-answer-modal')
+			} else {
+				this.$bvModal.show('answer-modal')
+			}
 		},
-		showQuestionModalWindow(q_id) {
+		showQuestionModalWindow(q_id, p_b_id=null) {
+			this.question_item.q_parallel_block_id = p_b_id
 			if (q_id === 0) {
 				this.question_item.q_id = 0
 				this.question_item.q_title = ""
+				this.question_item.q_connection_id = 0
+				this.question_item.q_type = 1
 				this.is_q_new = true
 			} else {
 				const item = this.$store.state.questions.find(item => item.q_id === q_id)
 				this.question_item.q_id = item.q_id
 				this.question_item.q_title = item.q_title
+				this.question_item.q_connection_id = item.q_connection_id
+				this.question_item.q_type = item.q_type
+				this.question_item.q_parallel_block_id = item.q_parallel_block_id
 				this.is_q_new = false
 			}
 			this.$bvModal.show('question-modal')
+		},
+		show_parallel_block_modal_window() {
+			this.$bvModal.show('p-b-modal')
 		},
 		logout() {
 			authenticationService.logout();
@@ -330,9 +558,11 @@ export default {
 
 		async handleRemoveQuestion(e, id) {
 			await this.$store.dispatch("removeQuestionItem", id);
+			await this.$store.dispatch('initQuestions')
 		},
 		async handleRemoveAnswers(e, id) {
 			await this.$store.dispatch("removeAnswerItem", id);
+			await this.$store.dispatch('initAnswers')
 		},
 
 		async handleSubmitQuestion(e) {
@@ -354,6 +584,13 @@ export default {
 				await this.$store.dispatch('editAnswerItem', this.answer_item)
 				this.showToast()
 			}
+		},
+		async handle_submit_parallel_block(e) {
+			e.preventDefault()
+			if (this.p_b_is_new){
+				alert(this.p_b_item)
+				await this.$store.dispatch('add_parallel_block_item', this.p_b_item)
+			}
 		}
 
 	},
@@ -363,6 +600,12 @@ export default {
 		},
 		answersList() {
 			return this.$store.state.answers.sort((a, b) => a.answ_id - b.answ_id);
+		},
+		question_types_list() {
+			return this.$store.state.question_types
+		},
+		parallel_blocks_list() {
+			 return this.$store.state.parallel_blocks.filter(item => item.p_b_test_id === parseInt(this.$route.params.id) )
 		}
 	},
 
