@@ -1,60 +1,44 @@
 <template>
 	<div>
-		<v-app-bar
-			color="#42A5F5"
-			flat
-			height="150px"
-			tile
-		>
-<!--			<v-toolbar-title class="title1"> Система Онлайн Тестирования</v-toolbar-title>-->
-			<h1 class="title1">Система Онлайн Тестирования</h1>
 
-			<v-spacer></v-spacer>
-
-			<ul>
-				<li>
-					<v-toolbar-title class="user-title" v-if="currentUser.user_type !== ('noname')">{{currentUser.user_name}}</v-toolbar-title>
-				</li>
-				<li>
-					<b-button @click="logout" v-if="currentUser.user_type !== ('noname')" variant="danger" size="md" class="mb-2">
-						<b-icon icon="box-arrow-right" aria-hidden="true"></b-icon>
-						Выйти
-					</b-button>
-					<b-button @click="$router.push({name: 'login'})" v-if="currentUser.user_type === 'noname'" variant="outline-primary" size="md" class="mb-2">
-						<b-icon icon="person-square" aria-hidden="true"></b-icon>
-						Авторизоваться
-					</b-button>
-				</li>
-			</ul>
-
-		</v-app-bar>
-		<v-app-bar
-			color="#E6EEFF"
-			flat
-			height="50px"
-			tile>
-			<b-button @click="$router.push({name: 'tests_list'})" pill v-if="currentUser.user_type === (1) || currentUser.user_type === ('teacher')">Список тестов</b-button>
-			<b-button pill v-if="currentUser.user_type === 1" @click="$router.push({name: 'admin_panel'})">Панель администрирования</b-button>
-		</v-app-bar>
+		<appbar></appbar>
 		<div class="wrapper-main">
-			<div id="formContent">
-				<ul>
-					<li><b-icon icon="file-text" style="height: 22px; width: 22px"></b-icon></li>
-					<li><h3>Найти тест</h3></li>
-				</ul>
-				<input v-model="search_test_id" class="text" id="test-id-input">
-				<b-button @click="noTestDetection(parseInt(search_test_id))" variant="info">
-					<b-icon icon="search"></b-icon>
-					Поиск
-				</b-button>
+<!--			<div id="formContent">-->
+<!--				<ul>-->
+<!--					<li><b-icon icon="file-text" style="height: 22px; width: 22px"></b-icon></li>-->
+<!--					<li><h3>Найти тест</h3></li>-->
+<!--				</ul>-->
+<!--				<input v-model="search_test_id" class="text" id="test-id-input">-->
+<!--				<b-button @click="noTestDetection(parseInt(search_test_id))" variant="info">-->
+<!--					<b-icon icon="search"></b-icon>-->
+<!--					Поиск-->
+<!--				</b-button>-->
+<!--				<b-button @click="show_results_modal">-->
+<!--					Результаты-->
+<!--				</b-button>-->
+<!--			</div>-->
+			<div style="padding-top: 100px">
+				<div id="cover">
+					<div class="tb">
+						<div class="td"><input type="text" placeholder="Поиск теста" required v-model="search_test_id"></div>
+						<div class="td" id="s-cover">
+							<button @click="noTestDetection(parseInt(search_test_id))">
+								<div id="s-circle"></div>
+								<span></span>
+							</button>
+						</div>
+					</div>
+				</div>
+				<b-alert
+					:show="show_alert"
+					dismissible
+					variant="warning"
+					@dismiss-count-down="5"
+					@dismissed="show_alert=false">Тест не найден</b-alert>
 			</div>
-			<b-alert
-				:show="show_alert"
-				dismissible
-				variant="warning"
-				@dismiss-count-down="5"
-				@dismissed="show_alert=false">Тест не найден</b-alert>
-		</div>
+			</div>
+
+
 	</div>
 </template>
 
@@ -62,6 +46,9 @@
 import { authenticationService } from "../authentication.service";
 
 export default {
+	components: {
+		// appbar
+	},
 	created() {
 		if (localStorage.getItem('currentUser')) {
 			try {
@@ -76,6 +63,7 @@ export default {
 		}
 		this.$store.dispatch('initUsers')
 		this.$store.dispatch('initTest')
+		this.$store.dispatch('initTestingSystem')
 	},
 	data () {
 		return {
@@ -83,7 +71,8 @@ export default {
 			userFromApi: "",
 			user: "",
 			search_test_id: null,
-			show_alert: false
+			show_alert: false,
+			result_fields: ['ts_test_id', 'TestName', 'Date', 'ts_score_percent'],
 		};
 	},
 	methods: {
@@ -108,104 +97,168 @@ export default {
 			} else {
 				this.show_alert = true
 			}
+		},
+
+		getFormatDate(date) {
+			return new Date(date).toLocaleDateString('ru-RU');
+		},
+	},
+	computed: {
+		testing_system_list() {
+			if (this.currentUser) {
+				return this.$store.state.testingSystems.filter(item => item.ts_user_id === this.currentUser.user_id)
+			}
+		},
+		tests_list() {
+			return this.$store.state.tests
 		}
 	}
 };
 </script>
 <style scoped>
- .title1 {
-	 font-size: 50px;
-	 font-weight: bold;
-	 color: #FFFFFF;
-	 text-shadow:
-		 -0 -3px 5px #000000,
-		 0 -3px 5px #000000,
-		 -0 3px 5px #000000,
-		 0 3px 5px #000000,
-		 -3px -0 5px #000000,
-		 3px -0 5px #000000,
-		 -3px 0 5px #000000,
-		 3px 0 5px #000000,
-		 -1px -3px 5px #000000,
-		 1px -3px 5px #000000,
-		 -1px 3px 5px #000000,
-		 1px 3px 5px #000000,
-		 -3px -1px 5px #000000,
-		 3px -1px 5px #000000,
-		 -3px 1px 5px #000000,
-		 3px 1px 5px #000000,
-		 -2px -3px 5px #000000,
-		 2px -3px 5px #000000,
-		 -2px 3px 5px #000000,
-		 2px 3px 5px #000000,
-		 -3px -2px 5px #000000,
-		 3px -2px 5px #000000,
-		 -3px 2px 5px #000000,
-		 3px 2px 5px #000000,
-		 -3px -3px 5px #000000,
-		 3px -3px 5px #000000,
-		 -3px 3px 5px #000000,
-		 3px 3px 5px #000000,
-		 -3px -3px 5px #000000,
-		 3px -3px 5px #000000,
-		 -3px 3px 5px #000000,
-		 3px 3px 5px #000000;
- }
- li {
-	 list-style-type: none;
-	 display: inline-flex;
-	 padding: 5px;
-	 margin: 5px;
- }
- .user-title {
-	 font-family: Arial, Helvetica, sans-serif;
-	 font-size: 25px;
-	 letter-spacing: -0.6px;
-	 word-spacing: -0.4px;
-	 color: #FFFFFF;
-	 color: #FFFFFF;
-	 text-shadow:
-		 2px 2px 2px #000000;
-	 font-weight: 400;
-	 text-decoration: overline;
-	 font-style: normal;
-	 font-variant: normal;
-	 text-transform: capitalize;
- }
- .user-icon {
-	 width: 40px !important;
-	 height: 40px !important;
- }
- .wrapper-main {
-	 display: flex;
-	 align-items: center;
-	 flex-direction: column;
-	 justify-content: center;
+
+.wrapper-main {
+	display: flex;
+	align-items: center;
+	flex-direction: column;
+	justify-content: center;
+	width: 100%;
+	min-height: 100%;
+	padding: 20px;
+}
+ .tb {
+	 display: table;
 	 width: 100%;
-	 min-height: 100%;
-	 padding: 20px;
  }
 
- #formContent {
-	 -webkit-border-radius: 10px 10px 10px 10px;
-	 border-radius: 10px 10px 10px 10px;
-	 background: #fff;
-	 padding: 30px;
-	 width: 90%;
-	 max-width: 450px;
-	 position: relative;
-	 padding: 0px;
-	 -webkit-box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
-	 box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
-	 text-align: center;
+ .td {
+	 display: table-cell;
+	 vertical-align: middle;
  }
- #test-id-input {
-	 -webkit-border-radius: 10px 10px 10px 10px;
-	 border-radius: 10px 10px 10px 10px;
-	 -webkit-box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
-	 box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
-	 text-align: center;
-	 justify-content: center;
+
+ input,
+ button {
+	 color: #fff;
+	 font-family: Nunito;
+	 padding: 0;
+	 margin: 0;
+	 border: 0;
+	 background-color: transparent;
+ }
+
+ #cover {
+	 position: absolute;
+	 top: 50%;
+	 left: 0;
+	 right: 0;
+	 width: 35%;
+	 padding: 35px;
+	 margin: -83px auto 0 auto;
+	 background-color: #c0392b;
+	 border-radius: 20px;
+	 box-shadow: 0 10px 40px #ff7c7c, 0 0 0 20px #ffffffeb;
+	 transform: scale(0.6);
+ }
+
+ form {
+	 height: 96px;
+ }
+
+ input[type="text"] {
+	 width: 100%;
+	 height: 96px;
+	 font-size: 60px;
+	 line-height: 1;
+ }
+
+ input[type="text"]::placeholder {
+	 color:  #fff;
+ }
+
+ #s-cover {
+	 width: 1px;
+	 padding-left: 35px;
+ }
+
+ button {
+	 position: relative;
+	 display: block;
+	 width: 84px;
+	 height: 96px;
+	 cursor: pointer;
+ }
+
+ #s-circle {
+	 position: relative;
+	 top: -8px;
+	 left: 0;
+	 width: 70px;
+	 height: 70px;
+	 margin-top: 0;
+	 border: 15px solid #fff;
+	 background-color: transparent;
+	 border-radius: 50%;
+	 transition: 0.5s ease all;
+ }
+
+ button span {
+	 position: absolute;
+	 top: 68px;
+	 left: 50px;
+	 display: block;
+	 width: 45px;
+	 height: 15px;
+	 background-color: transparent;
+	 border-radius: 10px;
+	 transform: rotateZ(43deg);
+	 transition: 0.5s ease all;
+ }
+
+ button span:before,
+ button span:after {
+	 content: "";
+	 position: absolute;
+	 bottom: 0;
+	 right: 0;
+	 width: 45px;
+	 height: 15px;
+	 background-color: #fff;
+	 border-radius: 10px;
+	 transform: rotateZ(0);
+	 transition: 0.5s ease all;
+ }
+
+ #s-cover:hover #s-circle {
+	 top: -1px;
+	 width: 67px;
+	 height: 15px;
+	 border-width: 0;
+	 background-color: #fff;
+	 border-radius: 20px;
+ }
+
+ #s-cover:hover span {
+	 top: 50%;
+	 left: 56px;
+	 width: 25px;
+	 margin-top: -9px;
+	 transform: rotateZ(0);
+ }
+
+ #s-cover:hover button span:before {
+	 bottom: 11px;
+	 transform: rotateZ(52deg);
+ }
+
+ #s-cover:hover button span:after {
+	 bottom: -11px;
+	 transform: rotateZ(-52deg);
+ }
+ #s-cover:hover button span:before,
+ #s-cover:hover button span:after {
+	 right: -6px;
+	 width: 40px;
+	 background-color: #fff;
  }
 
 </style>
