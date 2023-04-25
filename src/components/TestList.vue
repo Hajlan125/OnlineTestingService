@@ -46,7 +46,7 @@
 						</b-button>
 					</template>
 					<template #cell(save)="data">
-						<b-dropdown right text="Скачать">
+						<b-dropdown variant="outline-primary" right text="Скачать">
 							<b-dropdown-item @click="export_test(data.item.test_id, true)">Полный тест</b-dropdown-item>
 							<b-dropdown-item @click="export_test(data.item.test_id, false)">Случайный вариант</b-dropdown-item>
 						</b-dropdown>
@@ -147,7 +147,7 @@
 				:enable-download="false"
 				:preview-modal="true"
 				:paginate-elements-by-height="1400"
-				filename=""
+				filename="test"
 				:pdf-quality="2"
 				:manual-pagination="false"
 				pdf-format="a4"
@@ -166,20 +166,29 @@
 								</b-form-checkbox-group>
 							</b-form-group>
 							<b-form-group v-if="question.q_type === 2" :label="question.q_title">
-								<b-form-input></b-form-input>
+								<input style="border: 1px solid black; width: 800px" />
 							</b-form-group>
-							<b-form inline v-if="question.q_type === 3" :label="question.q_title">
+							<b-form v-if="question.q_type === 3">
 								<label>{{question.q_title}}</label>
-								<b-list-group>
-									<b-list-group-item v-for="item in get_first_part(question.answers)">{{item}}</b-list-group-item>
-								</b-list-group>
-								<b-list-group>
-									<b-list-group-item v-for="item in get_first_part(question.answers)">{{'       '}}</b-list-group-item>
-								</b-list-group>
-								<b-list-group>
-									<b-list-group-item v-for="item in get_second_part(question.answers)">{{item}}</b-list-group-item>
-								</b-list-group>
+								<b-form :label="question.q_title" inline >
+									<b-list-group id="list-group">
+										<b-list-group-item v-for="item in get_first_part(question.answers)">
+											<p>{{item}}</p>
+										</b-list-group-item>
+									</b-list-group>
+									<b-list-group>
+										<b-list-group-item v-for="item in get_first_part(question.answers)">
+											<p>· <span style="color:white;">------------------------------</span> ·</p>
+										</b-list-group-item>
+									</b-list-group>
+									<b-list-group>
+										<b-list-group-item v-for="item in get_second_part(question.answers)">
+											<p>{{item}}</p>
+										</b-list-group-item>
+									</b-list-group>
+								</b-form>
 							</b-form>
+							<input />
 						</div>
 					</div>
 				</section>
