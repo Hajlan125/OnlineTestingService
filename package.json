@@ -11,7 +11,8 @@
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
   },
   "dependencies": {
-    "@ssthouse/vue-tree-chart": "^0.6.5",
+    "@ssthouse/vue-tree-chart": "^0.6.8",
+    "vue-html2pdf": "^1.8.0",
     "axios": "^0.17.1",
     "babel-polyfill": "^6.26.0",
     "lodash": "^4.17.21",
@@ -30,6 +31,7 @@
     "not ie <= 8"
   ],
   "devDependencies": {
+		"@ssthouse/vue-tree-chart": "^0.6.8",
     "@kouts/vue-modal": "^2.1.4",
     "@melmacaluso/vue-modal": "^2.1.0",
     "babel-core": "^6.26.0",
@@ -44,6 +46,7 @@
     "deepmerge": "^4.2.2",
     "extract-text-webpack-plugin": "^3.0.2",
     "file-loader": "^1.1.4",
+    "html2pdf.js": "^0.10.1",
     "node-sass": "^4.5.3",
     "popper.js": "^1.16.1",
     "portal-vue": "^2.1.7",
