@@ -103,6 +103,10 @@ export const store = new Vuex.Store({
 			state.tests.push(test)
 		},
 
+		'EDIT_PARALLEL_BLOCK_ITEM' (state, p_block) {
+			const item = state.parallel_blocks.find(item => item.p_b_id === p_block.p_b_id)
+			Object.assign(item, p_block)
+		},
 		'EDIT_USER_TYPE_ITEM' (state, type) {
 			const item = state.user_types.find(item => item.type_u_id === type.type_u_id)
 			Object.assign(item, type)
@@ -132,6 +136,14 @@ export const store = new Vuex.Store({
 			Object.assign(item, item);
 		},
 
+		'REMOVE_USER_TYPE_ITEM'(state, user_type) {
+			const index = state.user_types.findIndex(item => item.type_u_id === user_type.type_u_id);
+			state.user_types.splice(index, 1)
+		},
+		'REMOVE_PARALLEL_BLOCK_ITEM'(state, p_block) {
+			const index = state.parallel_blocks.findIndex(item => item.p_b_id === p_block.p_b_id);
+			state.parallel_blocks.splice(index, 1)
+		},
 		'REMOVE_ANSWER_ITEM'(state, answer) {
 			const index = state.answers.findIndex(item => item.answ_id === answer.answ_id);
 			state.answers.splice(index, 1);
@@ -311,9 +323,10 @@ export const store = new Vuex.Store({
 			try {
 				let response = await QuestionService.postQuestion(item)
 				context.commit("ADD_QUESTION_ITEM", response.data);
+				return response
 			} catch (error) {
 				context.commit('SET_ALERT_TEXT', "ERROR TRY AGAIN");
-				alert("error")
+				alert("add question ERROR")
 			}
 		},
 		async addTestingSystemItem(context, item) {
@@ -335,6 +348,14 @@ export const store = new Vuex.Store({
 			}
 		},
 
+		async edit_parallel_block_item(context, item) {
+			try {
+				const response = await ParallelBlockService.put_parallel_block(item.p_b_id, item);
+				context.commit("EDIT_PARALLEL_BLOCK_ITEM", response.data);
+			} catch (error) {
+				alert('edit parallel block ERROR')
+			}
+		},
 		async edit_user_type_item(context, item){
 			try {
 				const response = await UserTypeService.put_user_type(item.type_u_id, item);
@@ -391,10 +412,26 @@ export const store = new Vuex.Store({
 				context.commit("EDIT_TEST_ITEM", response.data);
 			} catch (error) {
 				context.commit('SET_ALERT_TEXT', "ERROR TRY AGAIN");
-				alert("editTestItem error")
+				alert("editTestItem: ", JSON.stringify(error))
 			}
 		},
 
+		async remove_user_type_item(context, id) {
+			try {
+				const response = await UserTypeService.delete_user_type(id)
+				context.commit('REMOVE_USER_TYPE_ITEM', response.data)
+			} catch (error) {
+				alert("remove user type ERROR")
+			}
+		},
+		async remove_parallel_block_item(context, id) {
+			try {
+				const response = await ParallelBlockService.delete_parallel_block(id);
+				context.commit("REMOVE_PARALLEL_BLOCK_ITEM", response.data);
+			} catch (error) {
+				alert("remove parallel block ERROR")
+			}
+		},
 		async removeAnswerItem(context, id) {
 			try {
 				const response = await AnswerService.deleteAnswer(id);
