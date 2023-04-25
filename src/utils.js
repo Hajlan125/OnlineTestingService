@@ -14,6 +14,11 @@ export const Test_Types = {
 	Standard: 1,
 	Tree_test: 2
 }
+export const Question_Types = {
+	Standard: 1,
+	Open_answer: 2,
+	Comparison: 3
+}
 export const BASE_URL = "http://localhost:8000/"
 export function handleResponse(response) {
 	return response.text().then(text => {
@@ -29,7 +34,23 @@ export function handleResponse(response) {
 		return data;
 	});
 }
+export function shuffle(array) {
+	let currentIndex = array.length,  randomIndex;
 
+	// While there remain elements to shuffle.
+	while (currentIndex !== 0) {
+
+		// Pick a remaining element.
+		randomIndex = Math.floor(Math.random() * currentIndex);
+		currentIndex--;
+
+		// And swap it with the current element.
+		[array[currentIndex], array[randomIndex]] = [
+			array[randomIndex], array[currentIndex]];
+	}
+
+	return array;
+}
 export function formatDate(date) {
 	let DD = date.getDate();
 	if (DD < 10)
