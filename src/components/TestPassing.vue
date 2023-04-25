@@ -26,21 +26,25 @@
 	<div style="margin-left: auto;margin-right: auto;width: 600px;text-align:center;">
 		<div class="quiz-box" id="quiz">
 			<div v-for="question in treeList" class="quiz-header">
-				<h4 id="question">{{question.q_title}}</h4>
-				<div v-if="manyAnswersChecking(question.q_id, question.answers)">
-					<b-form-group label="Ответы">
-						<b-form-checkbox-group v-model="selected">
-							<b-form-checkbox v-for="a in question.answers" :key="a.answ_id" :value="a.answ_id" name="some-check">{{a.answ_text}}</b-form-checkbox>
-						</b-form-checkbox-group>
-					</b-form-group>
-				</div>
-				<div v-if="!manyAnswersChecking(question.q_id, question.answers)">
-					<b-form-group label="Ответы">
-						<b-form-radio-group>
-							<b-form-radio :id="`${a.answ_id}`" :key="a.answ_id" v-for="a in question.answers" :ref="a.answ_id" :value="a.answ_id" name="radio-btn" >{{a.answ_text}}</b-form-radio>
-						</b-form-radio-group>
-					</b-form-group>
-				</div>
+<!--				<h4 id="question">{{question.q_title}}</h4>-->
+							<b-form-group v-if="question.q_type === Question_Types.Standard" :label="question.q_title">
+								<b-form-checkbox-group v-model="user_answers_obj[question.q_id]">
+									<b-form-checkbox v-for="a in question.answers" :key="a.answ_id" :value="a.answ_id" name="some-check">{{a.answ_text}}</b-form-checkbox>
+								</b-form-checkbox-group>
+							</b-form-group>
+							<b-form-group v-if="question.q_type === Question_Types.Open_answer" :label="question.q_title">
+								<input class="open-answer-input" v-model="user_answers_obj[question.q_id]"></input>
+							</b-form-group>
+							<b-form-group v-if="question.q_type === Question_Types.Comparison" :label="question.q_title">
+								<b-table thead-tr-class="d-none"
+												 :items="current_shuffle(question.answers)" :fields="comparison_question_fields">
+									<template #cell(answ_comparison_text)="row">
+										<b-form-select :options="get_comparison_options(question.answers)"
+																	 v-model="user_answers_obj[question.q_id][row.item.answ_text]"
+																	 value-field="answ_comparison_text" text-field="answ_comparison_text"></b-form-select>
+									</template>
+								</b-table>
+							</b-form-group>
 			</div>
 
 		</div>
@@ -62,21 +66,13 @@
 			title="Введите текст вопроса"
 		>
 			<template #modal-header="{  }">
-				<!-- Эмулировать встроенное модальное действие кнопки закрытия заголовка -->
 				<b>Ваши результаты</b>
 			</template>
 			<template #default>
 				<p><span class="font-italic">{{currentUser.user_name}}</span>, результаты вашего тестирования</p>
 				<b-row>
-					<p>Количество правильных ответов: </p><p> <span :class="textClass">{{right_count}}</span>/{{rightAnswers.length}}</p>
-				</b-row>
-				<b-row>
 					<p>Процент правильных ответов: </p><p :class="textClass">{{percentage}}%</p>
 				</b-row>
-				<b-row>
-					<p>Итоговая оценка: </p><p :class="textClass">{{mark}}</p>
-				</b-row>
-
 
 			</template>
 			<template #modal-footer="{ cancel, hide }">
@@ -92,34 +88,30 @@
 
 <script>
 import {authenticationService} from "../authentication.service";
+import {Question_Types, Test_Types, shuffle} from "../utils";
+import axios from "axios";
 
 export default {
 	created() {
-		//предотвращение закрытия окна
-		window.addEventListener('beforeunload', (event) => {
-			this.submit(event)
-			// Cancel the event as stated by the standard.
-			event.preventDefault();
-			// Chrome requires returnValue to be set.
-			event.returnValue = '';
-
-		});
-
-		// alert('При перезагрузке или закрытии окна, все текущие результаты будут сохранены')
-
+		// window.addEventListener('beforeunload', (event) => {
+		// 	this.submit(event)
+		// 	event.preventDefault();
+		// 	event.returnValue = '';
+		// });
 		this.$store.dispatch('initCurrentTest', parseInt(this.$route.params.id))
-		const is_tree = this.$store.state.currentTest.is_tree;
-		this.isTree = is_tree;
+		const is_tree = this.$store.state.currentTest.test_type;
+		this.isTree = is_tree === Test_Types.Tree_test;
 		if (is_tree) {
 			this.$store.dispatch('initExpandQuestions')
 			this.$store.dispatch('initPassingQuestions')
-			this.question_list = this.$store.state.expandQuestions.find(item => item.q_test_id === parseInt(this.$route.params.id))
+			this.question_list = this.$store.state.expandQuestions.find(item =>
+				item.q_test_id === parseInt(this.$route.params.id))
 		} else {
 			this.$store.dispatch('initPassingQuestions')
-			this.question_list = this.$store.state.questions.filter(item => item.q_test_id === parseInt(this.$route.params.id))
+			this.question_list = this.$store.state.questions.filter(item =>
+				item.q_test_id === parseInt(this.$route.params.id))
 		}
 		this.ts_start_time = new Date(Date.now()).toISOString();
-
 	},
 	mounted() {
 
@@ -127,6 +119,7 @@ export default {
 	name: "TestPassing",
 	data() {
 		return {
+			Question_Types,
 			isTree: false,
 			question_list: [],
 			selected: [],
@@ -148,9 +141,15 @@ export default {
 			right_count: 0,
 			percentage: 0,
 			mark: 0,
+
+			comparison_question_fields: ['answ_text', 'answ_comparison_text'],
+			user_answers: {}
 		}
 	},
 	methods: {
+		current_shuffle(array) {
+			return shuffle(array)
+		},
 		hideHandler() {
 			this.$router.push({name: 'home'})
 		},
@@ -168,9 +167,9 @@ export default {
 				hideHeaderClose: false,
 				centered: true
 			})
-				.then(value => {
+				.then(async value => {
 					if (value) {
-						this.submit(e)
+						await this.submit(e)
 						this.$bvModal.show('modal-prevent-closing')
 					}
 				})
@@ -223,7 +222,8 @@ export default {
 			return count >= 2;
 		},
 		alerts(msg){
-			alert(msg)
+			// alert(msg)
+			alert(JSON.stringify(this.user_answers_obj))
 		},
 		addRadioValue() {
 			for (let question_id of this.questionsWithMultipleAnswers) {
@@ -249,18 +249,14 @@ export default {
 				}
 			}
 		},
-		getMark() {
-			Number.prototype.inRange = function (a, b) {
-				return this >= a && this <= b;
-			};
-			let right_answers = this.rightAnswers.sort()
-			let your_answers = this.selected.sort()
+		async getMark() {
+			Number.prototype.inRange = function (a, b) { return this >= a && this <= b; };
 
-			//получение всех правильных ответов пользователя
-			let your_right_answers = right_answers.filter(i => your_answers.includes(i))
-			this.right_count = your_right_answers.length
+			this.headerBgVariant = 'success'
+			this.headerTextVariant = 'dark'
+			this.textClass = 'text-success'
 
-			let percentage = (your_right_answers.length / right_answers.length) * 100
+			let percentage = await this.answers_validation()
 
 			if (isNaN(percentage)) {
 				this.percentage = 0
@@ -268,44 +264,35 @@ export default {
 				this.percentage = parseInt(percentage)
 			}
 
-			switch (true) {
-				case percentage.inRange(50, 71):
-					this.headerBgVariant = 'warning'
-					this.headerTextVariant = 'dark'
-					this.textClass = 'text-warning'
-					return 3
-				case percentage.inRange(71, 81):
-					this.headerBgVariant = 'success'
-					this.headerTextVariant = 'dark'
-					this.textClass = 'text-success'
-					return 4
-				case percentage.inRange(81, 100):
-					this.headerBgVariant = 'success'
-					this.headerTextVariant = 'dark'
-					this.textClass = 'text-success'
-					return 5
-				default:
-					this.headerBgVariant = 'danger'
-					this.headerTextVariant = 'dark'
-					this.textClass = 'text-danger'
-					return 2
-			}
+			// switch (true) {
+			// 	case percentage.inRange(50, 71):
+			// 		this.headerBgVariant = 'warning'
+			// 		this.headerTextVariant = 'dark'
+			// 		this.textClass = 'text-warning'
+			// 	case percentage.inRange(71, 81):
+			//
+			// 	case percentage.inRange(81, 100):
+			// 		this.headerBgVariant = 'success'
+			// 		this.headerTextVariant = 'dark'
+			// 		this.textClass = 'text-success'
+			// 	default:
+			// 		this.headerBgVariant = 'danger'
+			// 		this.headerTextVariant = 'dark'
+			// 		this.textClass = 'text-danger'
+			// }
+			// return this.percentage
 		},
 		async submit(e) {
-			this.formArrayOfRightAnswers()
-
 			e.preventDefault()
-			let mark = this.getMark();
-			this.mark = mark;
+
+			await this.getMark()
 
 			const item = {
 				ts_user_id: this.ts_user_id,
 				ts_test_id: this.$route.params.id,
 				ts_start_time: this.ts_start_time,
 				ts_end_time: new Date(Date.now()).toISOString(),
-				ts_score_id: mark,
-				ts_count_right_answers: this.right_count,
-
+				ts_score_percent: this.percentage,
 
 			}
 			console.log('submitted')
@@ -313,6 +300,20 @@ export default {
 
 			// await this.$store.dispatch('initTestingSystem')
 			// await this.$router.push({name: "home"});
+		},
+
+		get_comparison_options(answers) {
+			let options = []
+
+			for (let i = 0; i < answers.length; i++) {
+				options.push({answ_comparison_text: answers[i].answ_comparison_text})
+			}
+			return this.current_shuffle(options)
+		},
+
+		async answers_validation() {
+			const response = await axios.post('http://localhost:8000/validation', this.user_answers_obj)
+			return response.data.percent_score
 		}
 	},
 	computed: {
@@ -320,28 +321,96 @@ export default {
 			return this.$store.state.questions.filter(item => item.q_test_id === parseInt(this.$route.params.id))
 		},
 		treeList() {
+			const questions = this.$store.state.questions;
 			if (this.isTree) {
-				let q_list = [];
-				let child_list = [];
-				q_list.push(this.$store.state.questions.find(item => item.q_test_id === parseInt(this.$route.params.id) && item.q_parent_id === 0 ))
-				child_list = this.$store.state.questions.filter(item => item.q_parent_id === q_list[0].q_id)
+				const q_list = new Set();
+				const parentQuestion = questions.find(item =>
+					item.q_test_id === parseInt(this.$route.params.id) && item.q_parent_id === 0);
+				q_list.add(parentQuestion);
+				let child_list = questions.filter(item => item.q_parent_id === parentQuestion.q_id);
 				while (child_list.length !== 0) {
-					let rand = Math.floor(Math.random() * child_list.length);
-					q_list.push(child_list[rand])
-					child_list = this.$store.state.questions.filter(item => item.q_parent_id === child_list[rand].q_id)
+					const rand = Math.floor(Math.random() * child_list.length);
+					q_list.add(child_list[rand]);
+					child_list = questions.filter(item => item.q_parent_id === child_list[rand].q_id);
 				}
-				const final_list = q_list;
-				return final_list
+				return Array.from(q_list);
 			} else {
-				return this.$store.state.questions.filter(item => item.q_test_id === parseInt(this.$route.params.id))
+				const result = questions
+					.filter(item => item.q_test_id === parseInt(this.$route.params.id))
+					.reduce((acc, obj) => {
+						if (obj.q_parallel_block_id === null) {
+							acc.push(obj);
+						} else {
+							const group = acc.find((g) => g.q_parallel_block_id === obj.q_parallel_block_id);
+							if (group) {
+								group.objects.push(obj);
+							} else {
+								acc.push({ q_parallel_block_id: obj.q_parallel_block_id, objects: [obj] });
+							}
+						}
+						return acc;
+					}, []);
+
+				const output = result.map(group => {
+					if (group.objects) {
+						const randomIndex = Math.floor(Math.random() * group.objects.length);
+						return group.objects[randomIndex];
+					} else {
+						return group;
+					}
+				});
+				if (this.$store.state.tests.find(item => item.test_id === parseInt(this.$route.params.id)).test_random_sort) {
+					return shuffle(output.flat())
+				} else {
+					return output.flat().sort((a,b) => a.q_id - b.q_id);
+				}
 			}
 		},
+
+		user_answers_obj() {
+			let user_answers = {}
+			let tree_list = this.treeList
+			for (let i = 0; i < tree_list.length; i++) {
+				let item = tree_list[i]
+				switch (item.q_type) {
+					case Question_Types.Standard:
+						user_answers[item.q_id] = []
+						break
+					case Question_Types.Open_answer	:
+						user_answers[item.q_id] = ""
+						break
+					case Question_Types.Comparison:
+						let comparison_items = {}
+						for (let j = 0; j < item.answers.length; j++){
+							comparison_items[item.answers[j].answ_text] = ""
+						}
+						user_answers[item.q_id] = comparison_items
+						break
+				}
+			}
+			return user_answers
+		}
 	}
 }
 </script>
 
 <style scoped>
+.open-answer-input{
+	-webkit-border-radius: 20px;
+	-moz-border-radius: 20px;
+	border-radius: 20px;
+	border: 1px solid #2d9fd9;
+	color: #a0d18c;
+	width: 100%;
+	height: 30px;
+	padding-left: 10px;
+}
 
+.open-answer-input:focus {
+	outline: none;
+	border: 1px solid #a0d18c;
+	color: #2d9fd9;
+}
 #vo {
 	color:green;
 }
@@ -389,42 +458,15 @@ export default {
 	background-color: #5ec6eb;
 }
 .title1 {
-	font-size: 50px;
-	font-weight: bold;
-	color: #FFFFFF;
-	text-shadow:
-		-0 -3px 5px #000000,
-		0 -3px 5px #000000,
-		-0 3px 5px #000000,
-		0 3px 5px #000000,
-		-3px -0 5px #000000,
-		3px -0 5px #000000,
-		-3px 0 5px #000000,
-		3px 0 5px #000000,
-		-1px -3px 5px #000000,
-		1px -3px 5px #000000,
-		-1px 3px 5px #000000,
-		1px 3px 5px #000000,
-		-3px -1px 5px #000000,
-		3px -1px 5px #000000,
-		-3px 1px 5px #000000,
-		3px 1px 5px #000000,
-		-2px -3px 5px #000000,
-		2px -3px 5px #000000,
-		-2px 3px 5px #000000,
-		2px 3px 5px #000000,
-		-3px -2px 5px #000000,
-		3px -2px 5px #000000,
-		-3px 2px 5px #000000,
-		3px 2px 5px #000000,
-		-3px -3px 5px #000000,
-		3px -3px 5px #000000,
-		-3px 3px 5px #000000,
-		3px 3px 5px #000000,
-		-3px -3px 5px #000000,
-		3px -3px 5px #000000,
-		-3px 3px 5px #000000,
-		3px 3px 5px #000000;
+	margin: 1em 0 0.5em 0;
+	font-weight: 100;
+	text-transform: uppercase;
+	color: #d3e7c1;
+	font-style: italic;
+	font-family: 'Josefin Sans', sans-serif;
+	font-size: 58px;
+	line-height: 54px;
+	text-shadow: 2px 5px 0 rgba(0,0,0,0.2);
 }
 .user-title {
 	font-family: Arial, Helvetica, sans-serif;
