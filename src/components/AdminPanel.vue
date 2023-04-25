@@ -1,39 +1,11 @@
 <template>
 	<div>
-		<v-app-bar
-			color="#42A5F5"
-			flat
-			height="150px"
-			tile
-		>
-			<h1 class="title1">Система Онлайн Тестирования</h1>
-			<v-spacer></v-spacer>
-			<ul>
-				<li>
-					<v-toolbar-title class="user-title">{{currentUser.user_name}}</v-toolbar-title>
-				</li>
-				<li>
-					<b-button @click="logout" variant="danger" size="md" class="mb-2">
-						<b-icon icon="box-arrow-right" aria-hidden="true"></b-icon>
-						Выйти
-					</b-button>
-				</li>
-			</ul>
-
-		</v-app-bar>
-		<v-app-bar
-			color="#E6EEFF"
-			flat
-			height="50px"
-			tile>
-			<b-button @click="$router.push({name: 'home'})" pill>Вернуться в главное меню</b-button>
-		</v-app-bar>
+		<appbar></appbar>
 		<div>
 			<b-tabs pills card style="width: 95%; margin-left: auto; margin-right: auto;" content-class="mt-3">
 				<b-tab title="Список пользователей">
-					<b-button @click="showChangingPasswordModal(currentUser.user_id)" variant="primary">Изменить собственный пароль</b-button>
+					<button class="btn-add" @click="showUserModal(0)">Добавить</button>
 					<b-card>
-						<b-button class="button-71" @click="showUserModal(0)">Добавить</b-button>
 						<b-table fixed :items="userList" :fields="fields">
 							<template #cell(password)="data">
 								<b-button @click="showChangingPasswordModal(data.item.user_id)" variant="outline-primary">
@@ -41,16 +13,21 @@
 								</b-button>
 							</template>
 							<template #cell(edit)="data">
-								<b-button @click="showUserModal(data.item.user_id)" variant="outline-warning">
+								<b-button v-if="data.item.user_id !== currentUser.user_id"
+													@click="showUserModal(data.item.user_id)" variant="outline-warning">
 									<b-icon icon="pencil-square"></b-icon>
 									Изменить
 								</b-button>
 							</template>
 							<template #cell(delete)="data">
-								<b-button @click="showMsgOk($event,data.item.user_id)" variant="outline-danger">
+								<b-button v-if="data.item.user_id !== currentUser.user_id"
+													@click="showMsgOk($event,data.item.user_id)" variant="outline-danger">
 									<b-icon icon="trash"></b-icon>
 									Удалить
 								</b-button>
+							</template>
+							<template #cell(user_type)="data">
+								{{user_type_list.find(item => item.type_u_id === data.item.user_type).type_user}}
 							</template>
 						</b-table>
 					</b-card>
@@ -64,8 +41,8 @@
 								<b-skeleton width="70%"></b-skeleton>
 							</b-card>
 						</template>
+						<button class="btn-add" @click="show_user_type_edit_modal(0)">Добавить</button>
 						<b-card>
-							<b-button class="button-71" @click="show_user_type_edit_modal(0)">Добавить</b-button>
 							<b-table :items="user_type_list" :fields="user_types_fields">
 								<template #cell(edit)="data">
 									<b-button @click="show_user_type_edit_modal(data.item.type_u_id)" variant="outline-warning">
@@ -74,7 +51,7 @@
 									</b-button>
 								</template>
 								<template #cell(delete)="data">
-									<b-button v-if="data.item.type_u_id > 2" @click="alert('delete type')">
+									<b-button v-if="data.item.type_u_id > 3" @click="show_u_type_delete_msg_box($event, data.item.type_u_id)">
 										Удалить
 									</b-button>
 									<p1 v-else>
@@ -87,23 +64,29 @@
 				</b-tab>
 			</b-tabs>
 		</div>
-		<div>
+		<div class="u-type-modal">
 			<b-modal id="type-modal" no-fade title="Изменение типа пользователя">
 				<template #default>
-					<label for="type-input">Тип пользователя</label>
-					<b-form-input id="type-input" v-model="user_type_item.type_user"></b-form-input>
-					<label for="type-access-level-input">Уровень доступа</label>
-					<b-form-input id="type-access-level-input" v-model="user_type_item.access_level" type="number"></b-form-input>
+					<b-form @submit="submit_user_type($event)" id="type-form">
+						<b-form-group label="Тип пользователя" label-for="type-input">
+							<b-form-input required id="type-input" v-model="user_type_item.type_user"
+														placeholder="Введите ФИО пользователя"></b-form-input>
+						</b-form-group>
+						<b-form-group label="Уровень доступа" label-for="type-access-level-input">
+							<b-form-input required id="type-access-level-input" v-model="user_type_item.access_level"
+														type="number"></b-form-input>
+						</b-form-group>
+					</b-form>
 				</template>
 				<template #modal-footer="{ok, cancel}">
 					<div class="text-left">
-						<b-button @click="submit_user_type($event)" variant="success">OK</b-button>
-						<b-button @click="cancel" variant="danger">Отмена</b-button>
+						<b-button @click="cancel">Отмена</b-button>
+						<b-button type="submit" form="type-form" variant="success">OK</b-button>
 					</div>
 				</template>
 			</b-modal>
 		</div>
-		<div>
+		<div class="user-modal-window">
 			<b-modal id="user-modal" cancel-title="Отмена" cancel-variant="secondary"
 							  no-fade title="Редактирование пользователя">
 				<template #default>
@@ -112,7 +95,7 @@
 							<b-form-input required id="user-name-input" v-model="user_item.user_name" placeholder="Введите ФИО пользователя"></b-form-input>
 						</b-form-group>
 						<b-form-group label="Тип" label-for="user-type-input">
-							<b-form-select required id="user-type-input" v-model="user_item.user_type" :options=user_type_options value-field="type_u_id" text-field="type_user"></b-form-select>
+							<b-form-select required id="user-type-input" v-model="user_item.user_type" :options=user_type_list value-field="type_u_id" text-field="type_user"></b-form-select>
 						</b-form-group>
 						<b-form-group v-if="user_item.user_id === 0" label="Логин" label-for="user-login-input">
 							<b-form-input required id="user-login-input" v-model="user_item.login" placeholder="Введите логин"></b-form-input>
@@ -133,8 +116,8 @@
 				</template>
 			</b-modal>
 		</div>
-		<div>
-			<b-modal id="password-change-modal" cancel-title="Отмена"
+		<div class="pass-change-modal">
+			<b-modal id="password-change-modal" cancel-title="Отмена" @hide="new_password=''"
 							 cancel-variant="secondary" ok-variant="success" @cancel="new_password=''"
 							 no-fade title="Редактирование пароля">
 				<template #default>
@@ -148,7 +131,7 @@
 				</template>
 				<template #modal-footer="{ cancel }">
 					<b-btn @click="cancel">Отмена</b-btn>
-					<b-btn variant="success" @click="submitNewPassword($event, user_item.user_id)">OK</b-btn>
+					<b-btn variant="success" type="submit" form="new-password-form">OK</b-btn>
 				</template>
 			</b-modal>
 		</div>
@@ -242,7 +225,7 @@ export default {
 				this.user_item= {
 					user_id: 0,
 					user_name: "",
-					user_type: 98,
+					user_type: 2,
 					login: "",
 					password: "",
 				}
@@ -275,6 +258,8 @@ export default {
 			} else {
 				await this.$store.dispatch('editUserItem', this.user_item)
 			}
+
+			this.user_item.password = ""
 
 		},
 
@@ -339,8 +324,11 @@ export default {
 			}
 			await this.$store.dispatch('editUserItem', item)
 			this.$bvModal.hide('password-change-modal')
+			this.new_password = ""
 		},
-
+		reset_new_pass_modal() {
+			this.new_password = ""
+		},
 		load_user_types() {
 			this.$nextTick(async () => {
 				this.loading = true;
@@ -389,11 +377,40 @@ export default {
 			} else {
 				this.user_item.login = (login)
 			}
-		}
+		},
+		async handle_remove_user_type(e, id){
+			e.preventDefault()
+			// alert(id)
+			await this.$store.dispatch('remove_user_type_item', id)
+			await this.$store.dispatch('initUserTypes')
+		},
+		async show_u_type_delete_msg_box(e, id) {
+			this.$bvModal.msgBoxConfirm('Вы уверены, что хотите удалить?', {
+				title: 'Пожалуйста, подтвердите',
+				noFade: true,
+				size: 'sm',
+				buttonSize: 'sm',
+				okVariant: 'danger',
+				okTitle: 'YES',
+				cancelTitle: 'NO',
+				cancelVariant: 'secondary',
+				footerClass: 'p-2',
+				hideHeaderClose: false,
+				centered: true
+			})
+				.then(value => {
+					if (value) {
+						this.handle_remove_user_type(e, id)
+					}
+				})
+				.catch(err => {
+					// An error occurred
+				})
+		},
 	},
 	computed: {
 		userList() {
-			return this.$store.state.users.filter(item => item.user_id !== this.currentUser.user_id).sort((a, b) => a.user_id - b.user_id)
+			return this.$store.state.users.sort((a, b) => a.user_id - b.user_id)
 		},
 		// scoreList() {
 		// 	return this.$store.state.scores.sort((a,b) => a.score_id - b.score_id)
@@ -407,51 +424,14 @@ export default {
 			// for (let i in this.$store.state.user_types){
 			// 	options.push({'type_u_id': i.type_u_id, 'type_u': i.type_u})
 			// }
-			return this.$store.state.user_types
+			return this.$store.state.user_types.sort((a,b) => a.type_u_id - b.type_u_id)
 		}
 	}
 }
 </script>
 
 <style scoped>
-.title1 {
-	font-size: 50px;
-	font-weight: bold;
-	color: #FFFFFF;
-	text-shadow:
-		-0 -3px 5px #000000,
-		0 -3px 5px #000000,
-		-0 3px 5px #000000,
-		0 3px 5px #000000,
-		-3px -0 5px #000000,
-		3px -0 5px #000000,
-		-3px 0 5px #000000,
-		3px 0 5px #000000,
-		-1px -3px 5px #000000,
-		1px -3px 5px #000000,
-		-1px 3px 5px #000000,
-		1px 3px 5px #000000,
-		-3px -1px 5px #000000,
-		3px -1px 5px #000000,
-		-3px 1px 5px #000000,
-		3px 1px 5px #000000,
-		-2px -3px 5px #000000,
-		2px -3px 5px #000000,
-		-2px 3px 5px #000000,
-		2px 3px 5px #000000,
-		-3px -2px 5px #000000,
-		3px -2px 5px #000000,
-		-3px 2px 5px #000000,
-		3px 2px 5px #000000,
-		-3px -3px 5px #000000,
-		3px -3px 5px #000000,
-		-3px 3px 5px #000000,
-		3px 3px 5px #000000,
-		-3px -3px 5px #000000,
-		3px -3px 5px #000000,
-		-3px 3px 5px #000000,
-		3px 3px 5px #000000;
-}
+
 li {
 	list-style-type: none;
 	display: inline-flex;
@@ -550,6 +530,39 @@ li {
 		padding: 16px 48px;
 	}
 }
+.btn-add {
+	--b: 3px;   /* border thickness */
+	--s: .15em; /* size of the corner */
+	--c: #42A5F5;
 
+	padding: calc(.05em + var(--s)) calc(.3em + var(--s));
+	color: var(--c);
+	--_p: var(--s);
+	background:
+		conic-gradient(from 90deg at var(--b) var(--b),#0000 90deg,var(--c) 0)
+		var(--_p) var(--_p)/calc(100% - var(--b) - 2*var(--_p)) calc(100% - var(--b) - 2*var(--_p));
+	transition: .3s linear, color 0s, background-color 0s;
+	outline: var(--b) solid #0000;
+	outline-offset: .2em;
+}
+.btn-add:hover,
+.btn-add:focus-visible{
+	--_p: 0px;
+	outline-color: var(--c);
+	outline-offset: .05em;
+}
+.btn-add:active {
+	background: var(--c);
+	color: #fff;
+}
+
+.btn-add {
+	font-family: system-ui, sans-serif;
+	font-weight: bold;
+	font-size: 2rem;
+	cursor: pointer;
+	border: none;
+	margin: .1em;
+}
 
 </style>

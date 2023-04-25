@@ -1,42 +1,10 @@
 <template>
 	<div>
-		<v-app-bar
-			color="#42A5F5"
-			flat
-			height="150px"
-			tile
-		>
-			<!--			<v-toolbar-title class="title1"> Система Онлайн Тестирования</v-toolbar-title>-->
-			<h1 class="title1">Система Онлайн Тестирования</h1>
-
-			<v-spacer></v-spacer>
-
-			<ul style="padding-left: 10px">
-				<li>
-					<v-toolbar-title class="user-title">{{user.user_name}}</v-toolbar-title>
-				</li>
-				<li>
-					<b-button @click="logout" variant="danger" size="md" class="mb-2">
-						<b-icon icon="box-arrow-right" aria-hidden="true"></b-icon>
-						Выйти
-					</b-button>
-				</li>
-			</ul>
-
-		</v-app-bar>
-		<v-app-bar
-			color="#E6EEFF"
-			flat
-			class="second-toolbar"
-			height="50px"
-			tile>
-			<b-button @click="$router.push({name: 'home'})" pill>Вернуться в главное меню</b-button>
-		</v-app-bar>
+		<appbar></appbar>
 		<div>
 			<b-card>
-				<b-button class="button-71" v-b-modal.test-modal>Добавить</b-button>
-				<b-table :items="testsList" :fields="fields" striped responsive="sm" outlined
-								>
+				<button class="btn-add" v-b-modal.test-modal>Создать</button>
+				<b-table :items="testsList" :fields="fields" striped responsive="sm" outlined>
 					<template #cell(ID)="data">
 						{{data.item.test_id}}
 					</template>
@@ -58,12 +26,12 @@
 					<template #cell(learning_material_edit)="data">
 						<b-button v-b-modal.learning-material-modal @click="show_learning_material_modal(data.item.test_id)"
 											variant="outline-secondary">
-							<b-icon icon="pencil-square" variant="warning"></b-icon>
+							<b-icon icon="pencil-square" variant="warning"></b-icon>Учебный материал
 						</b-button>
 					</template>
 					<template #cell(edit)="data">
 						<b-button @click="redirect(data.item.test_type, data.item.test_id)" variant="outline-secondary">
-							<b-icon icon="pencil-square" variant="warning"></b-icon>
+							<b-icon icon="pencil-square" variant="warning"></b-icon>Конструктор
 						</b-button>
 					</template>
 					<template #cell(delete)="data">
@@ -77,9 +45,14 @@
 							Результаты
 						</b-button>
 					</template>
+					<template #cell(save)="data">
+						<b-dropdown right text="Скачать">
+							<b-dropdown-item @click="export_test(data.item.test_id, true)">Полный тест</b-dropdown-item>
+							<b-dropdown-item @click="export_test(data.item.test_id, false)">Случайный вариант</b-dropdown-item>
+						</b-dropdown>
+					</template>
 				</b-table>
 			</b-card>
-
 		</div>
 		<div class="results-modal">
 			<b-modal
@@ -109,68 +82,182 @@
 						<template #cell(ts_end_time)="data">
 							{{getFormatDate(data.item.ts_end_time)}}
 						</template>
-						<template #head(ts_score_id)="data">
+						<template #head(ts_score_percent)="data">
 							<span>Оценка</span>
 						</template>
-						<template #cell(ts_score_id)="data">
-							{{$store.state.scores.find(item => item.score_id === data.item.ts_score_id).score_text}} ({{data.item.ts_score_id}})
+						<template #head(SpentTime)="data">
+							<span>Затрачено времени</span>
 						</template>
+						<template #cell(SpentTime)="data">
+							{{time_spent(data.item.ts_start_time, data.item.ts_end_time)}}
+						</template>
+
 					</b-table>
 					</b-card>
 				</template>
 				<template #modal-footer="{ cancel, ok, hide }">
 					<!-- Кнопка с пользовательским значением триггера закрытия -->
+					<b-button size="sm" @click="export_results(selected_test_id)">
+						Скачать результаты
+					</b-button>
 					<b-button size="sm" variant="outline-danger" @click="cancel">
 						Закрыть
 					</b-button>
+
 				</template>
 			</b-modal>
 		</div>
 		<div class="test-modal" title="Создание теста">
-			<b-modal no-fade title="Создание теста" id="test-modal" @ok="handleSubmitTest"
-							 @hide="resetModal" ok-variant="success" cancel-title="Отмена">
-				<b-form-group label="Название теста" label-for="test-name-input">
-					<b-form-input v-model="test_item.test_name" id="test-name-input"></b-form-input>
-				</b-form-group>
-				<b-form-group label="Дисциплина" label-for="test-subject-input">
-					<b-form-input v-model="test_item.test_subject" id="test-subject-input"></b-form-input>
-				</b-form-group>
-				<b-form-group label="Тип" label-for="test-type-select">
-					<b-form-select required id="test-type-select" v-model="test_item.test_type"
-												 :options=test_type_options value-field="type_t_id" text-field="type_test"></b-form-select>
-				</b-form-group>
+			<b-modal id="test-modal" cancel-title="Отмена" cancel-variant="secondary"
+							 no-fade title="Создание теста" @hide="resetModal">
+				<template #default>
+					<b-form id="test-form" @submit="handleSubmitTest($event)">
+						<b-form-group label="Название теста" label-for="test-name-input">
+							<b-form-input class="style-input" required v-model="test_item.test_name" id="test-name-input"></b-form-input>
+						</b-form-group>
+						<b-form-group label="Дисциплина" label-for="test-subject-input">
+							<b-form-input class="style-input" required v-model="test_item.test_subject" id="test-subject-input"></b-form-input>
+						</b-form-group>
+						<b-form-group label="Тип" label-for="test-type-select">
+							<b-form-select required id="test-type-select" v-model="test_item.test_type"
+														 :options=test_type_options value-field="type_t_id" text-field="type_test"></b-form-select>
+						</b-form-group>
+					</b-form>
+				</template>
+				<template #modal-footer="{ cancel }">
+					<b-btn @click="cancel">Отмена</b-btn>
+					<b-btn variant="success" type="submit" form="test-form">OK</b-btn>
+				</template>
 			</b-modal>
-
 		</div>
 		<div class="learning-material-modal" title="Учебный материал">
 			<b-modal no-fade title="Учебный материал" id="learning-material-modal" @ok="handle_add_learning_material"
-							 @hide="resetModal" ok-variant="success" cancel-title="Отмена">
-				<b-form-group label="Учебный материал теста" label-for="learning-material-input">
+							  ok-variant="success" cancel-title="Отмена">
+				<b-form-group label="Редактирование учебного материала" label-for="learning-material-input">
 					<b-form-textarea rows="20" size="large" v-model="test_learning_material_item.test_learning_material"
 													 id="test-l-m-input"></b-form-textarea>
 				</b-form-group>
 			</b-modal>
 
 		</div>
+		<div class="test-export-block" id="test-export-block">
+			<vue-html2pdf
+				:show-layout="false"
+				:float-layout="true"
+				:enable-download="false"
+				:preview-modal="true"
+				:paginate-elements-by-height="1400"
+				filename=""
+				:pdf-quality="2"
+				:manual-pagination="false"
+				pdf-format="a4"
+				pdf-orientation="landscape"
+				pdf-content-width="800px"
+
+				ref="html2Pdf"
+			>
+				<section slot="pdf-content">
+					<div>
+						<h2>{{this.get_test_name}}</h2>
+						<div v-for="question in get_export_test">
+							<b-form-group v-if="question.q_type === 1" :label="question.q_title">
+								<b-form-checkbox-group>
+									<b-form-checkbox v-for="a in question.answers" :key="a.answ_id" :value="a.answ_id" name="some-check">{{a.answ_text}}</b-form-checkbox>
+								</b-form-checkbox-group>
+							</b-form-group>
+							<b-form-group v-if="question.q_type === 2" :label="question.q_title">
+								<b-form-input></b-form-input>
+							</b-form-group>
+							<b-form inline v-if="question.q_type === 3" :label="question.q_title">
+								<label>{{question.q_title}}</label>
+								<b-list-group>
+									<b-list-group-item v-for="item in get_first_part(question.answers)">{{item}}</b-list-group-item>
+								</b-list-group>
+								<b-list-group>
+									<b-list-group-item v-for="item in get_first_part(question.answers)">{{'       '}}</b-list-group-item>
+								</b-list-group>
+								<b-list-group>
+									<b-list-group-item v-for="item in get_second_part(question.answers)">{{item}}</b-list-group-item>
+								</b-list-group>
+							</b-form>
+						</div>
+					</div>
+				</section>
+			</vue-html2pdf>
+		</div>
+		<div class="results-export-block">
+			<vue-html2pdf
+				:show-layout="false"
+				:float-layout="true"
+				:enable-download="false"
+				:preview-modal="true"
+				:paginate-elements-by-height="1400"
+				filename=""
+				:pdf-quality="2"
+				:manual-pagination="false"
+				pdf-format="a4"
+				pdf-orientation="landscape"
+				pdf-content-width="800px"
+
+				ref="results_html_2_pdf"
+			>
+				<section slot="pdf-content">
+					<div>
+						<b-table :items="testingSystemList.filter(item => item.ts_test_id === test_id)"
+										 :fields="non_sortable_result_fields" striped responsive="sm" outlined>
+							<template #head(ts_user_id)="data">
+								<span>Студент</span>
+							</template>
+							<template #cell(ts_user_id)="data">
+								{{getUserName(data.item.ts_user_id)}}
+							</template>
+							<template #head(ts_end_time)="data">
+								<span>Дата</span>
+							</template>
+							<template #cell(ts_end_time)="data">
+								{{getFormatDate(data.item.ts_end_time)}}
+							</template>
+							<template #head(ts_score_percent)="data">
+								<span>Оценка</span>
+							</template>
+							<template #head(SpentTime)="data">
+								<span>Затрачено времени</span>
+							</template>
+							<template #cell(SpentTime)="data">
+								{{time_spent(data.item.ts_start_time, data.item.ts_end_time)}}
+							</template>
+
+						</b-table>
+					</div>
+				</section>
+			</vue-html2pdf>
+
+		</div>
 	</div>
+
 </template>
 
 <script>
 import { authenticationService} from "../authentication.service";
-import {Test_Types, Role} from "../utils";
+import {Test_Types, Role, shuffle} from "../utils";
+import html2pdf from "html2pdf.js";
+import VueHtml2pdf from 'vue-html2pdf';
 
 export default {
 	name: "TestList",
 	data() {
 		return{
+			comparison_question_fields: ['answ_text', 'answ_comparison_text'],
 			test_id: 0,
 			test_type_options: [],
 			user: "",
 			currentUser: authenticationService.currentUserValue,
 			fields: ['ID', 'Название', 'Дисциплина', 'ДатаСоздания', 'Создатель', 'ТипТеста',
-				'learning_material_edit', 'edit', 'delete', 'results'],
+				'learning_material_edit', 'edit', 'delete', 'results', 'save'],
 			result_fields: [{key: 'ts_user_id', sortable: true}, {key: 'ts_end_time', sortable: true},
-				{key: 'ts_score_id', sortable: true}],
+				{key: 'ts_score_percent', sortable: true}, {key: 'SpentTime', sortable: false}],
+			non_sortable_result_fields: [{key: 'ts_user_id', sortable: false}, {key: 'ts_end_time', sortable: false},
+				{key: 'ts_score_percent', sortable: false}, {key: 'SpentTime', sortable: false}],
 			test_item: {
 				test_name: "",
 				test_subject: "",
@@ -181,7 +268,9 @@ export default {
 			test_learning_material_item: {
 				test_id: 0,
 				test_learning_material: "Учебный материал"
-			}
+			},
+			selected_test_id: 0,
+			is_full_test: false
 		}
 	},
 	created() {
@@ -195,6 +284,8 @@ export default {
 		this.$store.dispatch('initTestingSystem')
 		this.$store.dispatch('initTestType')
 		this.$store.dispatch('initUserTypes')
+		this.$store.dispatch('initExpandQuestions')
+		this.$store.dispatch('initPassingQuestions')
 		this.test_type_options = [...[{'type_t_id': null, 'type_test': 'Выберите тип'}], ...this.test_types_list]
 		// this.$store.dispatch('initScore')
 		// this.$store.dispatch('initExpandQuestions')
@@ -278,25 +369,60 @@ export default {
 			}
 		},
 		resetModal() {
-			this.test_item = {
-				test_name: "",
-				test_subject: "",
-				test_type: null
-			}
-			this.test_learning_material_item = {
-				test_id: 0,
-				test_learning_material: "Учебный материал"
-			}
+			this.test_item.test_name = ""
+			this.test_item.test_subject = ""
+			this.test_item.test_type = null
+
+			// this.test_learning_material_item.test_id = 0
+			// this.test_learning_material_item.test_learning_material = "Учебный материал"
 		},
-		async handleSubmitTest() {
+		async handleSubmitTest(e) {
 			// alert(this.test_item.test_type)
+			e.preventDefault()
 			await this.$store.dispatch('addTestItem', this.test_item)
+			this.$bvModal.hide('test-modal')
+			this.resetModal()
 		},
 		async handle_add_learning_material() {
-			// alert(JSON.stringify(this.test_learning_material_item))
+
 			await this.$store.dispatch('editTestItem', this.test_learning_material_item)
 			await this.$store.dispatch('initTest')
+		},
+		export_test(test_id, is_full) {
+			this.selected_test_id = test_id
+			this.is_full_test = is_full
+			this.$refs.html2Pdf.generatePdf()
+		},
+		export_results(test_id) {
+			this.selected_test_id = test_id
+			this.$refs.results_html_2_pdf.generatePdf()
+		},
+
+		get_first_part(answers) {
+			let first_part = []
+			for (let i = 0; i < answers.length; i++) {
+				first_part.push(answers[i].answ_text)
+			}
+			return shuffle(first_part)
+		},
+		get_second_part(answers) {
+			let second_part = []
+			for (let i = 0; i < answers.length; i++) {
+				second_part.push(answers[i].answ_comparison_text)
+			}
+			return shuffle(second_part)
+		},
+		time_spent(date1, date2) {
+			let start = new Date(date1.substring(0, date1.length-1))
+			let end = new Date(date2.substring(0, date2.length-1))
+
+			let diff_ms = Math.abs(end.getTime() - start.getTime())
+			let diff_minutes = Math.floor(diff_ms / (1000 * 60))
+			let diff_seconds = diff_ms % (1000 * 60) / 1000
+
+			return diff_minutes + " минут " + diff_seconds + " секунд"
 		}
+
 	},
 	computed: {
 		usersList() {
@@ -315,13 +441,92 @@ export default {
 		},
 		test_types_list() {
 			return this.$store.state.test_types
-		}
+		},
+		get_export_test() {
+			if (this.selected_test_id !== 0) {
+				let isTree = this.$store.state.tests.find(item => item.test_id === this.selected_test_id).test_type === Test_Types.Tree_test
+
+				if (this.is_full_test) {
+					return this.$store.state.questions.filter(item => item.q_test_id === this.selected_test_id)
+				} else {
+					if (isTree) {
+						let q_list = [];
+						let child_list = [];
+						q_list.push(this.$store.state.questions.find(item =>
+							item.q_test_id === this.selected_test_id && item.q_parent_id === 0 ))
+						child_list = this.$store.state.questions.filter(item => item.q_parent_id === q_list[0].q_id)
+						while (child_list.length !== 0) {
+							let rand = Math.floor(Math.random() * child_list.length);
+							q_list.push(child_list[rand])
+							child_list = this.$store.state.questions.filter(item => item.q_parent_id === child_list[rand].q_id)
+						}
+						const final_list = q_list;
+						return final_list
+					} else {
+						let arr = this.$store.state.questions.filter(item => item.q_test_id === this.selected_test_id)
+						const result = arr.reduce((acc, obj) => {
+							if (obj.q_parallel_block_id === null) {
+								acc.push(obj);
+							} else {
+								const group = acc.find((g) => g.q_parallel_block_id === obj.q_parallel_block_id);
+								if (group) {
+									group.objects.push(obj);
+								} else {
+									acc.push({ q_parallel_block_id: obj.q_parallel_block_id, objects: [obj] });
+								}
+							}
+							return acc;
+						}, []);
+
+						const output = result.reduce((acc, group) => {
+							if (group.objects) {
+								const randomIndex = Math.floor(Math.random() * group.objects.length);
+								acc.push(group.objects[randomIndex]);
+							} else {
+								acc.push(group);
+							}
+							return acc;
+						}, []);
+						if (this.$store.state.tests.find(item => item.test_id === this.selected_test_id).test_random_sort) {
+							return shuffle(output.flat())
+						} else {
+							return output.flat().sort((a,b) => a.q_id - b.q_id);
+						}
+					}
+				}
+			}
+		},
+
+		get_test_name() {
+			if (this.selected_test_id !== 0){
+				const item = this.$store.state.tests.find(item => item.test_id === this.selected_test_id)
+				return item.test_name
+			}
+		},
+
 	},
 
 }
 </script>
 
 <style scoped>
+@import "/static/css/style.css";
+.style-input::placeholder {
+	color: gray;
+}
+
+.style-input {
+	background: #ecf0f3;
+	padding: 10px;
+	padding-left: 20px;
+	height: 50px;
+	font-size: 14px;
+	border-radius: 50px;
+	box-shadow: inset 6px 6px 6px #cbced1, inset -6px -6px 6px white;
+}
+.test-export-block {
+	/*display: none;*/
+}
 .button-71 {
 	background-color: #0078d0;
 	border: 0;
@@ -370,44 +575,7 @@ ul, li {
 	padding: 5px;
 	margin: 5px;
 }
-.title1 {
-	font-size: 50px;
-	font-weight: bold;
-	color: #FFFFFF;
-	text-shadow:
-		-0 -3px 5px #000000,
-		0 -3px 5px #000000,
-		-0 3px 5px #000000,
-		0 3px 5px #000000,
-		-3px -0 5px #000000,
-		3px -0 5px #000000,
-		-3px 0 5px #000000,
-		3px 0 5px #000000,
-		-1px -3px 5px #000000,
-		1px -3px 5px #000000,
-		-1px 3px 5px #000000,
-		1px 3px 5px #000000,
-		-3px -1px 5px #000000,
-		3px -1px 5px #000000,
-		-3px 1px 5px #000000,
-		3px 1px 5px #000000,
-		-2px -3px 5px #000000,
-		2px -3px 5px #000000,
-		-2px 3px 5px #000000,
-		2px 3px 5px #000000,
-		-3px -2px 5px #000000,
-		3px -2px 5px #000000,
-		-3px 2px 5px #000000,
-		3px 2px 5px #000000,
-		-3px -3px 5px #000000,
-		3px -3px 5px #000000,
-		-3px 3px 5px #000000,
-		3px 3px 5px #000000,
-		-3px -3px 5px #000000,
-		3px -3px 5px #000000,
-		-3px 3px 5px #000000,
-		3px 3px 5px #000000;
-}
+
 .user-title {
 	font-family: Arial, Helvetica, sans-serif;
 	font-size: 25px;
@@ -508,6 +676,41 @@ th, td {
 
 .table100.ver1 .ps__rail-y .ps__thumb-y::before {
 	background-color: #cccccc;
+}
+
+.btn-add {
+	--b: 3px;   /* border thickness */
+	--s: .15em; /* size of the corner */
+	--c: #42A5F5;
+
+	padding: calc(.05em + var(--s)) calc(.3em + var(--s));
+	color: var(--c);
+	--_p: var(--s);
+	background:
+		conic-gradient(from 90deg at var(--b) var(--b),#0000 90deg,var(--c) 0)
+		var(--_p) var(--_p)/calc(100% - var(--b) - 2*var(--_p)) calc(100% - var(--b) - 2*var(--_p));
+	transition: .3s linear, color 0s, background-color 0s;
+	outline: var(--b) solid #0000;
+	outline-offset: .2em;
+}
+.btn-add:hover,
+.btn-add:focus-visible{
+	--_p: 0px;
+	outline-color: var(--c);
+	outline-offset: .05em;
+}
+.btn-add:active {
+	background: var(--c);
+	color: #fff;
+}
+
+.btn-add {
+	font-family: system-ui, sans-serif;
+	font-weight: bold;
+	font-size: 2rem;
+	cursor: pointer;
+	border: none;
+	margin: .1em;
 }
 
 </style>

@@ -1,55 +1,71 @@
 <template>
 	<div data-app>
-		<v-app-bar
-			color="#42A5F5"
-			flat
-			height="150px"
-			tile
-		>
-			<!--			<v-toolbar-title class="title1"> Система Онлайн Тестирования</v-toolbar-title>-->
-			<h1 class="title1">Система Онлайн Тестирования</h1>
+		<appbar></appbar>
+<!--		<div class="card">-->
+<!--			<h2 class="card__title">{{currentTest.test_name}}</h2>-->
+<!--			<h3 class="card__subtitle">{{ currentTest.test_subject }}</h3>-->
+<!--			<p class="card__description"><span v-html="text_to_hyperlink(currentTest.test_learning_material)"></span></p>-->
+<!--			<ul class="card__list">-->
+<!--				<li class="card__item">Тип теста: {{ test_types_list.find(item => item.type_t_id === currentTest.test_type).type_test }}</li>-->
+<!--				<li class="card__item">Кол-во вопросов: {{this.$store.state.expandQuestions.filter(item => item.q_test_id === currentTest.test_id).length }}</li>-->
+<!--			</ul>-->
+<!--			<b-button variant="outline-primary">Пройти тест</b-button>-->
+<!--		</div>-->
+		<b-skeleton-wrapper class="skeleton-wrapper" :loading="loading">
+			<template #loading>
+				<b-card>
+					<b-skeleton width="85%"></b-skeleton>
+					<b-skeleton width="55%"></b-skeleton>
+					<b-skeleton width="70%"></b-skeleton>
+				</b-card>
+			</template>
+			<div class="courses-container">
+				<div class="course">
+					<div class="course-preview">
+						<h6 class="test-name-text">Тест</h6>
+						<h2>{{currentTest.test_name}}</h2>
+						<a>{{ currentTest.test_subject }}</a>
+					</div>
+					<div class="course-info">
+						<div class="progress-container">
 
-			<v-spacer></v-spacer>
-
-			<ul style="padding-left: 10px">
-				<li>
-					<v-toolbar-title class="user-title">{{currentUser.user_name}}</v-toolbar-title>
-				</li>
-				<li>
-					<b-button @click="logout" variant="danger" size="md" class="mb-2">
-						<b-icon icon="box-arrow-right" aria-hidden="true"></b-icon>
-						Выйти
-					</b-button>
-				</li>
-			</ul>
-
-		</v-app-bar>
-		<v-app-bar
-			color="#E6EEFF"
-			flat
-			class="second-toolbar"
-			height="50px"
-			tile>
-			<b-button @click="$router.push({name: 'home'})" pill>Вернуться в главное меню</b-button>
-		</v-app-bar>
-		<div class="wrapper-view">
-			<div id="mainContent">
-				<h3>{{currentTest.test_name}}</h3>
-				<h4>Количество вопросов: {{questionsItemsLength}}</h4>
-				<h4>{{treeTestText}}</h4>
+							<span class="progress-text">Кол-во вопросов: {{this.$store.state.expandQuestions.filter(item => item.q_test_id === currentTest.test_id).length}}</span>
+						</div>
+						<span class="progress-text">{{ test_types_list.find(item => item.type_t_id === currentTest.test_type).type_test }}</span>
+						<h4 class="learning-material-text" v-html="text_to_hyperlink(currentTest.test_learning_material)"></h4>
+						<button class="btn" @click="$router.push({name: 'test_passing', params: { id: ($route.params.id)}})">Пройти тест</button>
+					</div>
+				</div>
 			</div>
-			<div id="secondContent">
-				<b-button variant="primary" @click="$router.push({name: 'test_passing', params: { id: ($route.params.id)}})">Начать прохождение теста</b-button>
-			</div>
-		</div>
+		</b-skeleton-wrapper>
 	</div>
 </template>
 
 <script>
 import { authenticationService } from "../authentication.service";
-
+import {wait} from "../utils";
 
 export default {
+	watch: {
+		loading(newValue, oldValue) {
+			if (newValue !== oldValue) {
+				this.clearLoadingTimeInterval()
+
+				if (newValue) {
+					this.$_loadingTimeInterval = setInterval(() => {
+						this.loadingTime++
+					}, 1000)
+				}
+			}
+		},
+		loadingTime(newValue, oldValue) {
+			if (newValue !== oldValue) {
+				if (newValue === this.maxLoadingTime) {
+					this.loading = false
+				}
+			}
+		}
+	},
 	created() {
 		if (localStorage.getItem('currentUser')) {
 			try {
@@ -62,12 +78,19 @@ export default {
 				user_type: 'noname'
 			}
 		}
+		this.$_loadingTimeInterval = null
 		this.$store.dispatch('initCurrentTest', parseInt(this.$route.params.id))
 		this.$store.dispatch('initQuestions')
 		this.$store.dispatch('initExpandQuestions')
 	},
+	mounted() {
+		this.startLoading()
+	},
 	data () {
 		return {
+			loading: false,
+			loadingTime: 0,
+			maxLoadingTime: 1,
 			currentUser: null,
 			userFromApi: "",
 			user: "",
@@ -87,12 +110,21 @@ export default {
 		getDepth(array) {
 			return 1 + Math.max(0, ...array.map(({ children = [] }) => this.getDepth(children)));
 		},
-		timeToSolve() {
-			if (this.treeTestText === "Древовидный тест") {
-				return this.getDepth([this.firstQuestion])
-			} else {
-				return this.questionsItemsLength
-			}
+		clearLoadingTimeInterval() {
+			clearInterval(this.$_loadingTimeInterval)
+			this.$_loadingTimeInterval = null
+		},
+		startLoading() {
+			this.loading = true
+			this.loadingTime = 0
+		},
+		text_to_hyperlink(mess) {
+			let reg =  /(\w+:\/\/)?(www\.)?[\w+\-]+\.\w+/g;
+			mess = mess.replace(reg, function(s){
+				let str = (/:\/\//.exec(s) === null ? "http://" + s : s );
+				return "<a href=\""+ str + "\">" + str /*s*/ + "</a>";
+			});
+			return mess
 		}
 	},
 	computed: {
@@ -110,7 +142,10 @@ export default {
 		},
 		firstQuestion() {
 			return this.$store.state.expandQuestions.find(item => item.q_test_id === parseInt(this.$route.params.id))
-		}
+		},
+		test_types_list() {
+			return this.$store.state.test_types
+		},
 	}
 };
 </script>
@@ -122,99 +157,129 @@ ul, li {
 	padding: 5px;
 	margin: 5px;
 }
-.title1 {
-	font-size: 50px;
-	font-weight: bold;
-	color: #FFFFFF;
-	text-shadow:
-		-0 -3px 5px #000000,
-		0 -3px 5px #000000,
-		-0 3px 5px #000000,
-		0 3px 5px #000000,
-		-3px -0 5px #000000,
-		3px -0 5px #000000,
-		-3px 0 5px #000000,
-		3px 0 5px #000000,
-		-1px -3px 5px #000000,
-		1px -3px 5px #000000,
-		-1px 3px 5px #000000,
-		1px 3px 5px #000000,
-		-3px -1px 5px #000000,
-		3px -1px 5px #000000,
-		-3px 1px 5px #000000,
-		3px 1px 5px #000000,
-		-2px -3px 5px #000000,
-		2px -3px 5px #000000,
-		-2px 3px 5px #000000,
-		2px 3px 5px #000000,
-		-3px -2px 5px #000000,
-		3px -2px 5px #000000,
-		-3px 2px 5px #000000,
-		3px 2px 5px #000000,
-		-3px -3px 5px #000000,
-		3px -3px 5px #000000,
-		-3px 3px 5px #000000,
-		3px 3px 5px #000000,
-		-3px -3px 5px #000000,
-		3px -3px 5px #000000,
-		-3px 3px 5px #000000,
-		3px 3px 5px #000000;
-}
-.user-title {
-	font-family: Arial, Helvetica, sans-serif;
-	font-size: 25px;
-	letter-spacing: -0.6px;
-	word-spacing: -0.4px;
-	color: #FFFFFF;
-	color: #FFFFFF;
-	text-shadow:
-		2px 2px 2px #000000;
-	font-weight: 400;
-	text-decoration: overline;
-	font-style: normal;
-	font-variant: normal;
-	text-transform: capitalize;
-}
-.user-icon {
-	width: 40px !important;
-	height: 40px !important;
-}
-.wrapper-view {
+/*.card {*/
+/*	max-width: 500px;*/
+/*	margin: 0 auto;*/
+/*	padding: 20px;*/
+/*	border: 1px solid #ccc;*/
+/*	border-radius: 5px;*/
+/*	text-align: center;*/
+/*}*/
+
+/*.card__title {*/
+/*	font-size: 28px;*/
+/*	margin-bottom: 10px;*/
+/*}*/
+
+/*.card__subtitle {*/
+/*	font-size: 18px;*/
+/*	margin-bottom: 10px;*/
+/*}*/
+
+/*.card__description {*/
+/*	font-size: 16px;*/
+/*	margin-bottom: 20px;*/
+/*}*/
+
+/*.card__list {*/
+/*	list-style: none;*/
+/*	padding: 0;*/
+/*	margin: 0;*/
+/*}*/
+
+/*.card__item {*/
+/*	font-size: 14px;*/
+/*	margin-bottom: 5px;*/
+/*}*/
+.course {
+	background-color: #fff;
+	border-radius: 10px;
+	box-shadow: 0 10px 10px rgba(0, 0, 0, 0.2);
 	display: flex;
-	align-items: center;
-	flex-direction: column;
-	justify-content: center;
+	max-width: 100%;
+	margin-top: 1%;
+	margin-left: 30%;
+	overflow: hidden;
+	width: 700px;
+
+}
+
+.course h6 {
+	opacity: 0.6;
+	margin: 0;
+	color: white;
+	letter-spacing: 1px;
+	text-transform: uppercase;
+}
+
+.course h2 {
+	letter-spacing: 1px;
+	margin: 10px 0;
+	color: white;
+}
+.course h3 {
+	letter-spacing: 1px;
+	margin: 10px 0;
+	color: black;
+}
+.course a {
+	color: whitesmoke;
+}
+
+.course-preview {
+	background-color: #42A5F5; /* #2A265F */
+	color: #fff;
+	padding: 30px;
+	max-width: 350px;
+}
+
+.course-preview a {
+	color: #fff;
+	display: inline-block;
+	font-size: 12px;
+	opacity: 0.6;
+	margin-top: 30px;
+	text-decoration: none;
+}
+
+.course-info {
+	padding: 30px;
+	position: relative;
 	width: 100%;
-	min-height: 100%;
-	padding: 20px;
 }
 
-#mainContent {
-	-webkit-border-radius: 10px 10px 10px 10px;
-	border-radius: 10px 10px 10px 10px;
-	background: #fff;
-	padding: 30px;
-	width: 90%;
-	max-width: 600px;
-	position: relative;
-	padding: 0px;
-	-webkit-box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
-	box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
-	text-align: center;
-}
-#secondContent {
-	-webkit-border-radius: 10px 10px 10px 10px;
-	border-radius: 10px 10px 10px 10px;
-	background: #fff;
-	padding: 30px;
-	width: 90%;
-	max-width: 275px;
-	position: relative;
-	padding: 0px;
-	-webkit-box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
-	box-shadow: 0 30px 60px 0 rgba(0,0,0,0.3);
-	text-align: center;
+.progress-container {
+	position: absolute;
+	top: 30px;
+	right: 30px;
+	text-align: right;
+	width: 150px;
+
 }
 
+.progress-text {
+	font-size: 10px;
+	opacity: 0.6;
+	letter-spacing: 1px;
+}
 
+.btn {
+	background-color: #42A5F5;
+	border: 0;
+	border-radius: 50px;
+	box-shadow: 0 10px 10px rgba(0, 0, 0, 0.2);
+	color: #fff;
+	font-size: 16px;
+	padding: 12px 25px;
+	position: absolute;
+	bottom: 1%;
+	right: 30px;
+	letter-spacing: 1px;
+}
+
+.skeleton-wrapper {
+	margin-top: 1%;
+	margin-left: 30%;
+	width: 700px;
+}
 </style>

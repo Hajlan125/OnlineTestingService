@@ -154,9 +154,9 @@ export default {
 	 width: 35%;
 	 padding: 35px;
 	 margin: -83px auto 0 auto;
-	 background-color: #c0392b;
+	 background-color: #42A5F5;
 	 border-radius: 20px;
-	 box-shadow: 0 10px 40px #ff7c7c, 0 0 0 20px #ffffffeb;
+	 box-shadow: 0 10px 40px #42A5F5, 0 0 0 20px #ffffffeb;
 	 transform: scale(0.6);
  }
 
