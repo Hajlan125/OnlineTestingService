@@ -23,19 +23,17 @@ export default new VueRouter({
 		{path: "/", name: "loader", component: Loader },
 		{path: "/app", name: "app", component: App},
 		{path: "/tests", name: "tests_list",component: TestList,
-											meta: {authorize: [Role.Admin, Role.Teacher]}},
+											meta: {level: 1}},
 		{path: "/test/:id", name:"test_page", component: TestPage},
 		{path: "/test/:id/question/:q_id", name:"question_by_test", component: QuestionPage},
 		{path: "/tree_test/:id", name:"tree_test_page", component: TreeTestPage},
 		{path: "/login", name: "login", component:LoginPage},
 		{path: "/home", name: "home", component: MainPage},
-		{path: "/test_creation", name:"test_creation", component: TestCreation,
-															meta: {authorize: [Role.Teacher, Role.Admin]}},
 		{path: "/test_view/:id", name:"test_view", component: TestView},
 		{path: "/passing/:id", name:"test_passing", component: TestPassing,
-														meta: {authorize: [Role.Student, Role.Teacher]}},
+														meta: {level: 99}},
 		{path: "/administration", name:"admin_panel", component: AdminPanel,
-															meta: {authorize: [Role.Admin]}}
+															meta: {level: 0},}
 	],
 });
 
