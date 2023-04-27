@@ -23,37 +23,44 @@
 			При перезагрузке или закрытии окна, все текущие результаты будут сохранены
 		</b-alert>
 	</v-app-bar>
-	<div style="margin-left: auto;margin-right: auto;width: 600px;text-align:center;">
-		<div class="quiz-box" id="quiz">
-			<div v-for="question in treeList" class="quiz-header">
-<!--				<h4 id="question">{{question.q_title}}</h4>-->
-							<b-form-group v-if="question.q_type === Question_Types.Standard" :label="question.q_title">
-								<b-form-checkbox-group v-model="user_answers_obj[question.q_id]">
-									<b-form-checkbox v-for="a in question.answers" :key="a.answ_id" :value="a.answ_id" name="some-check">{{a.answ_text}}</b-form-checkbox>
-								</b-form-checkbox-group>
-							</b-form-group>
-							<b-form-group v-if="question.q_type === Question_Types.Open_answer" :label="question.q_title">
-								<input class="open-answer-input" v-model="user_answers_obj[question.q_id]"></input>
-							</b-form-group>
-							<b-form-group v-if="question.q_type === Question_Types.Comparison" :label="question.q_title">
-								<b-table thead-tr-class="d-none"
-												 :items="current_shuffle(question.answers)" :fields="comparison_question_fields">
-									<template #cell(answ_comparison_text)="row">
-										<b-form-select :options="get_comparison_options(question.answers)"
-																	 v-model="user_answers_obj[question.q_id][row.item.answ_text]"
-																	 value-field="answ_comparison_text" text-field="answ_comparison_text"></b-form-select>
-									</template>
-								</b-table>
-							</b-form-group>
+	<b-skeleton-wrapper :loading="loading">
+		<template #loading>
+			<b-card><b-skeleton width="100%"></b-skeleton> </b-card>
+		</template>
+		<div style="margin-left: auto;margin-right: auto;width: 600px;text-align:center;">
+			<div class="quiz-box" id="quiz">
+				<div v-for="question in treeList" class="quiz-header">
+					<!--				<h4 id="question">{{question.q_title}}</h4>-->
+					<b-form-group v-if="question.q_type === Question_Types.Standard" :label="question.q_title">
+						<b-form-checkbox-group v-model="user_answers_obj[question.q_id]">
+							<b-form-checkbox v-for="a in question.answers" :key="a.answ_id" :value="a.answ_id" name="some-check">{{a.answ_text}}</b-form-checkbox>
+						</b-form-checkbox-group>
+					</b-form-group>
+					<b-form-group v-if="question.q_type === Question_Types.Open_answer" :label="question.q_title">
+						<input class="open-answer-input" v-model="user_answers_obj[question.q_id]" />
+					</b-form-group>
+					<b-form-group v-if="question.q_type === Question_Types.Comparison" :label="question.q_title">
+						<b-table thead-tr-class="d-none"
+										 :items="current_shuffle(question.answers)" :fields="comparison_question_fields">
+							<template #cell(answ_comparison_text)="row">
+								<b-form-select :options="get_comparison_options(question.answers)"
+															 v-model="user_answers_obj[question.q_id][row.item.answ_text]"
+															 value-field="answ_comparison_text" text-field="answ_comparison_text"></b-form-select>
+							</template>
+						</b-table>
+					</b-form-group>
+				</div>
+
 			</div>
 
 		</div>
 
-	</div>
-
-	<b-button class="button" @click="showMsgBoxOne($event)"> <!-- @click="submit($event)" -->
+		<b-button class="button" @click="showMsgBoxOne($event)"> <!-- @click="submit($event)" -->
 			Закончить
-	</b-button>
+		</b-button>
+	</b-skeleton-wrapper>
+
+
 	<div>
 		<b-modal
 			data-backdrop="static"
@@ -112,13 +119,39 @@ export default {
 				item.q_test_id === parseInt(this.$route.params.id))
 		}
 		this.ts_start_time = new Date(Date.now()).toISOString();
+
+		this.$_loadingTimeInterval = null
 	},
 	mounted() {
+		this.startLoading()
+	},
+	watch: {
+		loading(newValue, oldValue) {
+			if (newValue !== oldValue) {
+				this.clearLoadingTimeInterval()
 
+				if (newValue) {
+					this.$_loadingTimeInterval = setInterval(() => {
+						this.loadingTime++
+					}, 250)
+				}
+			}
+		},
+		loadingTime(newValue, oldValue) {
+			if (newValue !== oldValue) {
+				if (newValue === this.maxLoadingTime) {
+					this.loading = false
+				}
+			}
+		}
 	},
 	name: "TestPassing",
 	data() {
 		return {
+			loading: false,
+			loadingTime: 0,
+			maxLoadingTime: 1,
+
 			Question_Types,
 			isTree: false,
 			question_list: [],
@@ -147,6 +180,14 @@ export default {
 		}
 	},
 	methods: {
+		clearLoadingTimeInterval() {
+			clearInterval(this.$_loadingTimeInterval)
+			this.$_loadingTimeInterval = null
+		},
+		startLoading() {
+			this.loading = true
+			this.loadingTime = 0
+		},
 		current_shuffle(array) {
 			return shuffle(array)
 		},
@@ -400,7 +441,7 @@ export default {
 	-moz-border-radius: 20px;
 	border-radius: 20px;
 	border: 1px solid #2d9fd9;
-	color: #a0d18c;
+	color: black;
 	width: 100%;
 	height: 30px;
 	padding-left: 10px;
@@ -409,7 +450,7 @@ export default {
 .open-answer-input:focus {
 	outline: none;
 	border: 1px solid #a0d18c;
-	color: #2d9fd9;
+	color: black;
 }
 #vo {
 	color:green;
