@@ -54,7 +54,7 @@ export default {
 				if (newValue) {
 					this.$_loadingTimeInterval = setInterval(() => {
 						this.loadingTime++
-					}, 1000)
+					}, 250)
 				}
 			}
 		},

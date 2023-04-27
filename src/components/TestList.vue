@@ -144,7 +144,7 @@
 			<vue-html2pdf
 				:show-layout="false"
 				:float-layout="true"
-				:enable-download="false"
+				:enable-download="true"
 				:preview-modal="true"
 				:paginate-elements-by-height="1400"
 				filename="test"
