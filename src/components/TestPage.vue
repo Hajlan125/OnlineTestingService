@@ -219,6 +219,10 @@
 							<b-form-select id="q-type-selector" v-model="question_item.q_type"
 															 :options="question_types_list" value-field="type_q_id" text-field="type_q"></b-form-select>
 						</b-form-group>
+						<b-form-group v-if="question_item.q_type === Question_Types.Open_answer">
+							<label>Точное совпадение ответа <b-icon icon="info-circle" v-b-popover.hover.right="'Если отключить, то при прохождении ответ пользователя может быть не точным, а совпадать со смыслом правильного ответа'"></b-icon></label>
+							<b-form-checkbox id="q-exact-match-check" v-model="question_item.q_exact_match"></b-form-checkbox>
+						</b-form-group>
 					</b-form>
 				</template>
 				<template #modal-footer="{ cancel, ok, hide }">
@@ -472,11 +476,11 @@
 														placeholder="Введите текст вопроса" required>
 							</b-form-input>
 						</b-form-group>
-
 						<b-input required @blur="handle_submit_filtered_answer(filtered_answer_items.find(item => item.answ_question_id === selected_question_id).answ_id)"
 										 v-model="filtered_answer_items.find(item => item.answ_question_id === selected_question_id).answ_text"
 										 class="style-input" placeholder="Открытый ответ"></b-input>
-
+						<b-form-checkbox id="exact-match-edit" v-model="edit_question_item.q_exact_match"
+														 @change="handle_submit_exact_match">Точное совпадение</b-form-checkbox>
 					</div>
 				</template>
 				<template #modal-footer="{ cancel, ok, hide }">
@@ -543,7 +547,7 @@ export default {
 				q_id: 0,
 				q_title: "",
 				q_test_id: parseInt(this.$route.params.id),
-				q_connection_id: 0,
+				q_exact_match: false,
 				q_type: 1,
 				q_parallel_block_id: 0
 			},
@@ -560,7 +564,7 @@ export default {
 				q_id: 0,
 				q_title: "",
 				q_test_id: parseInt(this.$route.params.id),
-				q_connection_id: 0,
+				q_exact_match: false,
 				q_type: 1,
 				q_parallel_block_id: 0
 			},
@@ -772,18 +776,16 @@ export default {
 		},
 		async handle_submit_edited_standard_question(e) {
 			e.preventDefault()
-
 			if (this.edit_question_item.q_title) {
 				await this.$store.dispatch('editQuestionItem', this.edit_question_item)
 			}
-
-			// for (let i = 0; i < this.filtered_answer_items.length; i++) {
-			// 	let obj = this.filtered_answer_items[i]
-			// 	await this.$store.dispatch('editAnswerItem', obj)
-			// }
-			// await this.$store.dispatch('initQuestions')
-			// await this.$store.dispatch('initExpandQuestions')
-			// await this.$store.dispatch('initAnswers')
+		},
+		async handle_submit_exact_match() {
+			const item = {
+				q_id: this.selected_question_id,
+				q_exact_match: this.edit_question_item.q_exact_match
+			}
+			await this.$store.dispatch('editQuestionItem', item)
 		},
 		async handle_submit_filtered_answer(a_id) {
 			// e.preventDefault()
@@ -801,7 +803,8 @@ export default {
 			const item = this.questionsList.find(item => item.q_id === q_id)
 			this.edit_question_item = {
 				q_id: q_id,
-				q_title: item.q_title
+				q_title: item.q_title,
+				q_exact_match: item.q_exact_match
 			}
 
 			if (q_type === Question_Types.Comparison) {
