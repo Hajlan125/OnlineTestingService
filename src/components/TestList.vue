@@ -3,8 +3,9 @@
 		<appbar></appbar>
 		<div>
 			<b-card>
-				<button class="btn-add" v-b-modal.test-modal>Создать</button>
-				<b-table :items="testsList" :fields="fields" striped responsive="sm" outlined>
+				<button class="btn-add" id="test-create-btn" v-b-modal.test-modal>Создать</button>
+				<b-table :items="testsList" :fields="fields" striped responsive="sm" outlined
+								 style="width: 100%; margin-right: 5%">
 					<template #cell(ID)="data">
 						{{data.item.test_id}}
 					</template>
@@ -120,7 +121,7 @@
 						</b-form-group>
 						<b-form-group label="Тип" label-for="test-type-select">
 							<b-form-select required id="test-type-select" v-model="test_item.test_type"
-														 :options=test_type_options value-field="type_t_id" text-field="type_test"></b-form-select>
+														 :options="test_types_list" value-field="type_t_id" text-field="type_test"></b-form-select>
 						</b-form-group>
 					</b-form>
 				</template>
@@ -201,7 +202,7 @@
 				:enable-download="false"
 				:preview-modal="true"
 				:paginate-elements-by-height="1400"
-				filename=""
+				filename="test-results"
 				:pdf-quality="2"
 				:manual-pagination="false"
 				pdf-format="a4"
@@ -249,8 +250,6 @@
 <script>
 import { authenticationService} from "../authentication.service";
 import {Test_Types, Role, shuffle} from "../utils";
-import html2pdf from "html2pdf.js";
-import VueHtml2pdf from 'vue-html2pdf';
 
 export default {
 	name: "TestList",
@@ -271,7 +270,7 @@ export default {
 				test_name: "",
 				test_subject: "",
 				test_creator: authenticationService.currentUserValue.user_id,
-				test_type: null,
+				test_type: 1,
 				test_learning_material: "Учебный материал"
 			},
 			test_learning_material_item: {
@@ -437,8 +436,8 @@ export default {
 		usersList() {
 			return this.$store.state.users;
 		},
-		testsList() {  // ДОБАВИТЬ ЗАВИСИМОСТЬ ОТ УРОВНЯ ДОСТУПА
-			if (this.user.user_type === 1) {
+		testsList() {
+			if (this.user.user_type === Role.Admin) {
 				return this.$store.state.tests;
 			}
 			else {
