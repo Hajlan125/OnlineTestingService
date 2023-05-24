@@ -37,8 +37,10 @@
 			<template #thead-top="data">
 				<b-tr>
 					<b-th colspan="4">
-						<button class="btn-add" @click="showQuestionModalWindow(0)">Добавить новый вопрос</button>
-						<button class="btn-add" @click="show_parallel_block_modal_window(0)">Добавить блок параллельных вопросов</button>
+						<button class="btn-add" id="new-question-add-btn"
+										@click="showQuestionModalWindow(0)">Добавить новый вопрос</button>
+						<button class="btn-add" id="new-parallel-block-add-btn"
+										@click="show_parallel_block_modal_window(0)">Добавить блок параллельных вопросов</button>
 					</b-th>
 					<b-th colspan="2">
 						<label>Случайный порядок вопросов при прохождении</label>
@@ -326,10 +328,11 @@
 						</b-form-group>
 
 						<b-form id="add-answ-form" @submit="handle_submit_answer($event, selected_question_id)" inline>
-							<b-input required v-model="new_answer_item.answ_text" class="style-input" placeholder="Добавление ответа"></b-input>
+							<b-input required v-model="new_answer_item.answ_text" id="new-standard-answer-input"
+											 class="style-input" placeholder="Добавление ответа"></b-input>
 							<b-form-checkbox size="lg" switch button-variant="outline-primary" class="standard-answ-correct-switch"
-															 v-model="new_answer_item.is_correct">Правильный?</b-form-checkbox>
-							<b-button variant="outline-primary" type="submit">Добавить</b-button>
+															 id="new-standard-answer-checkbox" v-model="new_answer_item.is_correct">Правильный?</b-form-checkbox>
+							<b-button id="new-standard-answer-btn" variant="outline-primary" type="submit">Добавить</b-button>
 						</b-form>
 						<b-form-group>
 							<b-table
@@ -728,7 +731,7 @@ export default {
 				let q_id = response.data.q_id
 				let answer_item = {
 					answ_id: 0,
-					answ_text: "Текст вопроса",
+					answ_text: "Текст ответа",
 					answ_question_id: q_id,
 					is_correct: true,
 				}
