@@ -84,6 +84,7 @@ export default {
 		this.$store.dispatch('initExpandQuestions')
 	},
 	mounted() {
+		this.$store.dispatch('initTestType')
 		this.startLoading()
 	},
 	data () {

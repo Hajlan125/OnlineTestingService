@@ -100,11 +100,11 @@ import axios from "axios";
 
 export default {
 	created() {
-		// window.addEventListener('beforeunload', (event) => {
-		// 	this.submit(event)
-		// 	event.preventDefault();
-		// 	event.returnValue = '';
-		// });
+		window.addEventListener('beforeunload', (event) => {
+			this.submit(event)
+			event.preventDefault();
+			event.returnValue = '';
+		});
 		this.$store.dispatch('initCurrentTest', parseInt(this.$route.params.id))
 		const is_tree = this.$store.state.currentTest.test_type;
 		this.isTree = is_tree === Test_Types.Tree_test;

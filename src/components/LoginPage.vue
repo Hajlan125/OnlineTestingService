@@ -14,7 +14,7 @@
 			<form>
 				<input v-model="username" type="text" id="login" class="fadeIn second" name="login" placeholder="login">
 				<input v-model="password" type="password" id="password" class="fadeIn third" name="login" placeholder="password">
-				<input @click="onSubmit" type="button" class="fadeIn fourth" value="Log In">
+				<input @click="onSubmit" id="log-in-btn" type="button" class="fadeIn fourth" value="Log In">
 			</form>
 
 		</div>
@@ -31,6 +31,7 @@
 
 import { authenticationService } from '../authentication.service';
 import axios from "axios";
+import {BASE_URL} from "../utils";
 
 export default {
 	mounted() {
@@ -58,7 +59,7 @@ export default {
 		async onSubmit() {
 			this.submitted = true;
 			this.loading = true;
-			const AUTH_API = 'http://localhost:8000/auth'
+			const AUTH_API = BASE_URL + 'auth'
 			try {
 				const response = await axios.get(`${AUTH_API+'?login='+this.username+'&password='+this.password}`)
 				authenticationService.login(response.data)

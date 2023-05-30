@@ -51,7 +51,8 @@
 									</b-button>
 								</template>
 								<template #cell(delete)="data">
-									<b-button v-if="data.item.type_u_id > 3" @click="show_u_type_delete_msg_box($event, data.item.type_u_id)">
+									<b-button variant="outline-danger" v-if="data.item.type_u_id > 3"
+														@click="show_u_type_delete_msg_box($event, data.item.type_u_id)">
 										Удалить
 									</b-button>
 									<p1 v-else>
@@ -70,10 +71,11 @@
 					<b-form @submit="submit_user_type($event)" id="type-form">
 						<b-form-group label="Тип пользователя" label-for="type-input">
 							<b-form-input required id="type-input" v-model="user_type_item.type_user"
-														placeholder="Введите ФИО пользователя"></b-form-input>
+														placeholder="Введите тип пользователя"></b-form-input>
 						</b-form-group>
 						<b-form-group label="Уровень доступа" label-for="type-access-level-input">
-							<b-form-input required id="type-access-level-input" v-model="user_type_item.access_level"
+							<b-form-input :disabled="user_type_item.type_u_id <= 3"
+														required id="type-access-level-input" v-model="user_type_item.access_level"
 														type="number"></b-form-input>
 						</b-form-group>
 					</b-form>
@@ -250,7 +252,6 @@ export default {
 					this.alert_show = true
 				} else {
 					this.user_item.password = bcrypt.hashSync(this.user_item.password, 10)
-					alert(this.user_item.user_type)
 					await this.$store.dispatch('addUserItem', this.user_item)
 					this.$bvModal.hide('user-modal')
 					this.alert_show = false
@@ -258,7 +259,7 @@ export default {
 			} else {
 				await this.$store.dispatch('editUserItem', this.user_item)
 			}
-
+			this.new_password = ""
 			this.user_item.password = ""
 
 		},
@@ -285,7 +286,7 @@ export default {
 
 		async submit_user_type(e) {
 			e.preventDefault()
-			alert(JSON.stringify(this.user_type_item))
+			// alert(JSON.stringify(this.user_type_item))
 			if (this.user_type_item.type_u_id === 0) {
 				await this.$store.dispatch('add_user_type_item', this.user_type_item)
 			} else {

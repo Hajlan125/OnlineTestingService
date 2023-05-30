@@ -20,9 +20,10 @@
 			<div style="padding-top: 100px">
 				<div id="cover">
 					<div class="tb">
-						<div class="td"><input type="text" placeholder="Поиск теста" required v-model="search_test_id"></div>
+						<div class="td"><input type="text" id="test-search-input"
+																	 placeholder="Поиск теста" required v-model="search_test_id"></div>
 						<div class="td" id="s-cover">
-							<button @click="noTestDetection(parseInt(search_test_id))">
+							<button id="test-search-button" @click="noTestDetection(parseInt(search_test_id))">
 								<div id="s-circle"></div>
 								<span></span>
 							</button>

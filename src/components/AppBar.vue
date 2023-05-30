@@ -13,7 +13,8 @@
 
 			<ul>
 				<li>
-					<v-toolbar-title class="user-title" v-if="currentUser.user_type !== ('noname')">{{currentUser.user_name}}</v-toolbar-title>
+					<v-toolbar-title id="current-user-name" class="user-title"
+													 v-if="currentUser.user_type !== ('noname')">{{currentUser.user_name}}</v-toolbar-title>
 				</li>
 				<li>
 <!--					<b-button @click="logout" v-if="currentUser.user_type !== ('noname')" variant="danger" size="md" class="mb-2">-->
@@ -27,8 +28,8 @@
 					<div class="button1 logout" v-if="currentUser.user_type > 0">
 						<div class="button1-content logout" @click="logout" >Выйти</div>
 					</div>
-					<div class="button1 login" v-else>
-						<div class="button1-content login" @click="$router.push({name: 'login'})">Войти</div>
+					<div class="button1 login" id="btn-login" @click="$router.push({name: 'login'})" v-else>
+						<div class="button1-content login" >Войти</div>
 					</div>
 				</li>
 			</ul>

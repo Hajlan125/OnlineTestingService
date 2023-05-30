@@ -31,7 +31,7 @@
 						</b-form>
 					</div>
 				</b-card>
-				<button v-if="isNew" class="btn-add" @click="show_new_question_adding_modal(0)">Добавить первый вопрос</button>
+				<button v-if="isNew" class="btn-add" @click="show_new_question_adding_modal(null)">Добавить первый вопрос</button>
 			</div>
 			<b-button-toolbar>
 				<b-button-group>
@@ -324,11 +324,12 @@ export default {
 			answer_fields: ['answ_id', 'answ_text', 'is_correct', 'delete'],
 			comparison_answer_fields: ['answ_id', 'answ_text', 'answ_comparison_text', 'delete'],
 
+			new_q_parent_id: null,
 			new_question_item: {
 				q_id: 0,
 				q_title: "",
 				q_test_id: parseInt(this.$route.params.id), //parseInt(this.$route.params.id)
-				q_parent_id: 0,
+
 				q_type: 1,
 				q_parallel_block_id: null
 			},
@@ -380,7 +381,11 @@ export default {
 				return
 			}
 
-			let response = await this.$store.dispatch('addQuestionItem', this.new_question_item)
+			let item = JSON.parse(JSON.stringify(this.new_question_item))
+			if (this.new_q_parent_id !== null) {
+				item.q_parent_id = this.new_q_parent_id
+			}
+			let response = await this.$store.dispatch('addQuestionItem', item)
 			await this.$store.dispatch('initQuestions')
 			await this.$store.dispatch('initExpandQuestions')
 
@@ -388,7 +393,7 @@ export default {
 				let q_id = response.data.q_id
 				let answer_item = {
 					answ_id: 0,
-					answ_text: "Текст вопроса",
+					answ_text: "Текст ответа",
 					answ_question_id: q_id,
 					is_correct: true,
 				}
@@ -398,7 +403,7 @@ export default {
 			this.$bvModal.hide('new-question-modal')
 		},
 		show_new_question_adding_modal(parent_id) {
-			this.new_question_item.q_parent_id = parent_id
+			this.new_q_parent_id = parent_id
 			this.new_question_item.q_title = ""
 			this.new_question_item.q_type = 1
 
