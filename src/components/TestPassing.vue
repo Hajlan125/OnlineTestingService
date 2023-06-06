@@ -297,7 +297,9 @@ export default {
 			this.headerTextVariant = 'dark'
 			this.textClass = 'text-success'
 
+			this.loading = true
 			let percentage = await this.answers_validation()
+			this.loading = false
 
 			if (isNaN(percentage)) {
 				this.percentage = 0
